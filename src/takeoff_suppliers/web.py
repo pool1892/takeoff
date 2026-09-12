@@ -182,6 +182,28 @@ def create_app(market: Any, operator_token: str, buyer_token: str,
                             "website_url": f"/public/vendors/{quote(vid, safe='')}"})
         return vendors
 
+    def contact_links(contact: dict) -> str:
+        links = []
+        seen = set()
+        for field in ("email", "agent_email"):
+            address = contact.get(field)
+            if address and address not in seen:
+                seen.add(address)
+                href = "mailto:" + quote(address, safe="@._+-")
+                links.append(f"<a href='{esc(href)}'>{esc(address)}</a>")
+        website = contact.get("website", "")
+        if website.startswith(("https://", "http://")):
+            links.append(f"<a href='{esc(website)}'>Supplier website</a>")
+        return "<p>" + " · ".join(links) + "</p>" if links else ""
+
+    def business_description(vendor: dict) -> str:
+        return {
+            "general": "Building materials and fixed package quotes.",
+            "overstock": "Selected building materials, available by individual line or package.",
+            "local": "Building materials with dedicated and shared delivery options.",
+            "trader": "Material quotes with later delivery options.",
+        }.get(vendor["id"], "Browse available products and delivery terms.")
+
     @app.get("/public/manifest")
     def public_manifest():
         run = public_run()
@@ -206,8 +228,8 @@ def create_app(market: Any, operator_token: str, buyer_token: str,
         content = "<p>Browse products and delivery terms, then contact the supplier to negotiate.</p>"
         for vendor in discovery_vendors():
             content += (f"<article><h2><a href='{vendor['website_url']}'>{esc(vendor['name'])}</a></h2>"
-                        f"<p>{esc(vendor['description'])}</p><p>Channel: {esc(vendor['channel'])}</p>"
-                        + evidence(vendor['contact']) + "</article>")
+                        f"<p>{esc(business_description(vendor))}</p><p>Channel: {esc(vendor['channel'])}</p>"
+                        + contact_links(vendor['contact']) + "</article>")
         return page("Supplier directory", content + "<a href='/public/manifest'>Machine-readable discovery manifest</a>")
 
     @app.get("/public/vendors/{vendor_id}", response_class=HTMLResponse)
@@ -215,7 +237,7 @@ def create_app(market: Any, operator_token: str, buyer_token: str,
         run = public_run()
         data = market.catalog(run["id"], vendor_id, query=query)
         vendor = next(v for v in discovery_vendors() if v["id"] == vendor_id)
-        content = ("<a href='/public'>All suppliers</a>" + evidence(vendor['contact']) +
+        content = ("<a href='/public'>All suppliers</a>" + contact_links(vendor['contact']) +
                    f"<form method='get'><label>Search products <input name='query' value='{esc(query)}'></label>"
                    "<button>Search</button></form>")
         for product in data['products']:

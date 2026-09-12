@@ -1,0 +1,107 @@
+{
+  "schema_version": "takeoff.recorded-supplier-example.v1",
+  "context": "../../docs/demo-context.md",
+  "recording": {
+    "kind": "captured_live_exchange",
+    "scenario_provenance": "authored_house_material_market",
+    "scope": "first_three_of_25_requirements",
+    "supplier_reply_sent_at": "2026-09-12T21:32:46.664Z",
+    "buyer_verification": {
+      "source": "Christoph implementation agent; issue #9 update at 21:37 UTC",
+      "task_id": "285b8a73-572a-4e0a-9509-f97cf994f6f6",
+      "recommendation_comment_id": "bc41b89b-f5b9-42fb-95d3-9631c1c1ede0",
+      "task_status": "done",
+      "validated_requirement_count": 3
+    },
+    "negotiation": "Buyer proposed USD 2300; supplier matched it. No post-quote counter or acceptance occurred."
+  },
+  "offer": {
+    "id": "quote_d7479895425441aa89b8ddb47946ddcc",
+    "quote_id": "quote_d7479895425441aa89b8ddb47946ddcc",
+    "run_id": "run_402632f04bb94032b83ffa8ecd69f96f",
+    "vendor_id": "overstock",
+    "supplier_id": "overstock",
+    "buyer_id": "demo-buyer",
+    "request_id": "email:3bdb9db4-4356-4476-a320-789c371966db",
+    "revision": 1,
+    "previous_quote_id": null,
+    "status": "issued",
+    "subtotal": "2365.60",
+    "total": "2300.00",
+    "currency": "USD",
+    "delivery_slot": "standard",
+    "created_at": "2026-09-12T21:32:30.500416+00:00",
+    "expires_at": "2026-09-12T22:32:30.500416+00:00",
+    "conditions": [
+      "Stock and delivery capacity are reserved only after acceptance and a final availability check.",
+      "Discounts apply only to this complete package; amounts are USD."
+    ],
+    "simulated": true,
+    "evidence_refs": [
+      "event_312d6e842662471991cb58e404cdc17e"
+    ],
+    "tax_treatment": "all_fixture_taxes_included",
+    "lines": [
+      {
+        "product_id": "overstock-house-01",
+        "name": "Full-length KD SPF studs",
+        "quantity": 200,
+        "unit": "each",
+        "unit_price": "4.99",
+        "line_total": "998.00",
+        "requirement_id": "house-01",
+        "substitution_for": null,
+        "units_per_sale_unit": "1",
+        "requirement_unit": "each",
+        "covered_quantity": "200",
+        "variant": null
+      },
+      {
+        "product_id": "overstock-house-02",
+        "name": "KD SPF long framing",
+        "quantity": 60,
+        "unit": "each",
+        "unit_price": "10.86",
+        "line_total": "651.60",
+        "requirement_id": "house-02",
+        "substitution_for": null,
+        "units_per_sale_unit": "1",
+        "requirement_unit": "each",
+        "covered_quantity": "60",
+        "variant": null
+      },
+      {
+        "product_id": "overstock-house-03",
+        "name": "Rated OSB sheathing",
+        "quantity": 40,
+        "unit": "sheet",
+        "unit_price": "17.90",
+        "line_total": "716.00",
+        "requirement_id": "house-03",
+        "substitution_for": null,
+        "units_per_sale_unit": "1",
+        "requirement_unit": "sheet",
+        "covered_quantity": "40",
+        "variant": null
+      }
+    ],
+    "fees": [
+      {
+        "name": "delivery",
+        "amount": "68.00"
+      }
+    ],
+    "discounts": [
+      {
+        "code": "negotiated",
+        "description": "Negotiated reduction on this complete package.",
+        "amount": "133.60"
+      }
+    ],
+    "delivery": {
+      "slot_id": "standard",
+      "label": "94103 zone estimate \u2014 delivered by Sept 18",
+      "days": 6
+    }
+  }
+}
