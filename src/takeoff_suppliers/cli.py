@@ -23,6 +23,7 @@ def parser():
     serve = commands.add_parser('serve', help='Serve supplier website and HTTP API')
     serve.add_argument('--host', default='127.0.0.1')
     serve.add_argument('--port', type=int, default=8000)
+    serve.add_argument('--public-run', default=None, help='Explicitly publish read-only discovery for this run')
     serve.add_argument('--voice', action='store_true', help='Enable live OpenAI phone stretch')
     worker = commands.add_parser('worker', help='Poll a configured supplier mailbox and reply')
     worker.add_argument('run_id')
@@ -112,7 +113,8 @@ def execute(args):
         import uvicorn
         from .web import create_app
         app = create_app(market, settings.secret('TAKEOFF_OPERATOR_TOKEN'),
-                         settings.secret('TAKEOFF_BUYER_TOKEN'), buyer_id)
+                         settings.secret('TAKEOFF_BUYER_TOKEN'), buyer_id,
+                         public_run_id=args.public_run, public_vendor_contacts=settings.data.get('vendors', {}))
         if args.voice:
             from .voice import attach_voice
             openai_key = settings.secret('OPENAI_API_KEY')

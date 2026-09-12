@@ -204,3 +204,82 @@ def test_rejection_preserves_evidence_and_prevents_acceptance(setup):
     with pytest.raises(MarketError):
         market.accept_offer(run["id"], offer["id"], "buyer")
     assert not market.score_plan(run["id"], "buyer", [offer["id"]])["valid"]
+
+
+def converted_market(tmp_path, *, variants=False):
+    base = Market(tmp_path / "base.db")
+    scenario = deepcopy(base.scenario)
+    scenario["tax_treatment"] = "all_fixture_taxes_included"
+    requirement = scenario["requirements"][0]
+    requirement.update(unit="linear_ft", quantity=200 if variants else 10)
+    vendor = scenario["vendors"][0]
+    product = vendor["products"][0]
+    product.update(unit="coil", units_per_sale_unit="100" if variants else "2.5", requirement_unit="linear_ft", stock=4)
+    vendor["products"] = [product]
+    vendor["slots"][0]["capacity"] = 4
+    scenario["requirements"] = [requirement]
+    scenario["vendors"] = [vendor]
+    if variants:
+        requirement["required_variants"] = {"red": 100, "blue": 100}
+        product["variant"] = "red"
+        blue = deepcopy(product)
+        blue.update(id="general-stud-blue", variant="blue")
+        vendor["products"].append(blue)
+    path = tmp_path / "converted.json"
+    path.write_text(json.dumps(scenario))
+    market = Market(tmp_path / "converted.db", path)
+    return market, market.create_run("buyer"), path
+
+
+def test_decimal_conversion_scores_coverage_but_reserves_sale_units(tmp_path):
+    market, run, _ = converted_market(tmp_path)
+    data = proposal(market, run, quantities={"stud": 4})
+    data["lines"][0]["unit"] = "coil"
+    offer = market.issue_offer(run["id"], "general", "buyer", data)
+    assert offer["lines"][0]["covered_quantity"] == "10.0"
+    assert offer["lines"][0]["requirement_unit"] == "linear_ft"
+    assert offer["lines"][0]["quantity"] == 4
+    assert offer["total"] == "69.00"  # Four sale units at6 +45 delivery.
+    assert market.score_plan(run["id"], "buyer", [offer["id"]])["valid"]
+    accepted = market.accept_offer(run["id"], offer["id"], "buyer")
+    catalog = market.catalog(run["id"], "general")
+    assert catalog["products"][0]["stock"] == 0
+    assert catalog["delivery_slots"][0]["capacity"] == 0
+    assert catalog["products"][0]["units_per_sale_unit"] == "2.5"
+    assert accepted["draft_order"]["tax_treatment"] == "all_fixture_taxes_included"
+    assert catalog["tax_treatment"] == offer["tax_treatment"] == "all_fixture_taxes_included"
+
+
+def test_same_color_coverage_cannot_complete_mixed_variant_requirement(tmp_path):
+    market, run, _ = converted_market(tmp_path, variants=True)
+    red_only = {"request_id": "red", "delivery_slot": "standard", "lines": [
+        {"product_id": "general-stud", "quantity": 2, "unit": "coil"}]}
+    red_offer = market.issue_offer(run["id"], "general", "buyer", red_only)
+    score = market.score_plan(run["id"], "buyer", [red_offer["id"]])
+    assert score["quantities"]["stud"] == 200
+    assert score["failures"] == ["missing_variant:stud:blue"]
+    mixed = deepcopy(red_only)
+    mixed["lines"][0]["quantity"] = 1
+    mixed["lines"].append({"product_id": "general-stud-blue", "quantity": 1, "unit": "coil"})
+    offer = market.issue_offer(run["id"], "general", "buyer", mixed)
+    assert market.score_plan(run["id"], "buyer", [offer["id"]])["valid"]
+
+
+@pytest.mark.parametrize("conversion", [None, "NaN", "0", "-1"])
+def test_different_units_need_a_valid_explicit_conversion(tmp_path, conversion):
+    _, _, path = converted_market(tmp_path)
+    scenario = json.loads(path.read_text())
+    product = scenario["vendors"][0]["products"][0]
+    if conversion is None:
+        product.pop("units_per_sale_unit")
+    else:
+        product["units_per_sale_unit"] = conversion
+    path.write_text(json.dumps(scenario))
+    with pytest.raises(ValueError):
+        Market(tmp_path / "invalid.db", path)
+
+
+def test_legacy_fixture_explicitly_reports_unmodeled_tax(setup):
+    market, run = setup
+    offer = market.issue_offer(run["id"], "general", "buyer", proposal(market, run))
+    assert offer["tax_treatment"] == "unknown/not_modeled"

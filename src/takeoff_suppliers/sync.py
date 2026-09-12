@@ -75,5 +75,6 @@ class SupplierRecordsSync:
                     task = attempt("fulfillment_task", lambda: self._task(run_id, vendor_id, offer), offer["quote_id"])
                     if task:
                         records["tasks"].append({"quote_id": offer["quote_id"], "task": task})
+            self.state.put(f"records:{run_id}:{vendor_id}", records)
         self.state.put(f"records:{run_id}", result)
         return result

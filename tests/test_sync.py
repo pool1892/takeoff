@@ -87,3 +87,12 @@ def test_worker_pending_task_remains_pending(tmp_path):
     state.put(f'fulfillment:{run["id"]}:general:{offer["quote_id"]}', {"pending": True})
     assert not sync.sync(run["id"])["ok"]
     assert all(r.url.path != "/api/tasks" for r in requests)
+
+
+def test_separate_vendor_syncs_retain_every_reference_in_export(tmp_path):
+    sync, market, run, state, requests = setup(tmp_path)
+    for vendor, channel in sync.connections.items():
+        assert SupplierRecordsSync(market, state, {vendor: channel}).sync(run['id'])['ok']
+    exported = state.export_run(run['id'])['record_mirrors']
+    assert set(exported['vendors']) == {'general', 'local'}
+    assert all(v['catalog']['id'] for v in exported['vendors'].values())
