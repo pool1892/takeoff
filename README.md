@@ -102,3 +102,20 @@ variables and run commands will be documented when those integrations exist.
 Keep local environments, credentials, runtime state, and raw captures out of Git.
 Commit shared code, instructions, intentionally sanitized fixtures, and concise
 run instructions. There are no product install or run commands to claim yet.
+
+## Deterministic procurement demo state
+
+`src/demoScenario.js` provides a small, buyer-visible **simulated** scenario that an
+Ambiguous workspace can render while the live Hermes and remote-supplier connections
+are being integrated. It models the contractor's priority brief, quote evidence,
+negotiation history, one consequential delivery decision, a decision-dependent
+recommendation, and an explicitly non-ordering draft purchase plan.
+
+```bash
+npm test
+```
+
+Use `createDemoProcurement()` before a decision to render the required contractor
+question. Pass `accept-five-day` or `require-three-day` after the answer; the selected
+supplier changes based on that answer. The fixture intentionally excludes buyer and
+supplier private commercial state, and must remain visibly labelled as simulated.
