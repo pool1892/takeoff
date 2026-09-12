@@ -53,6 +53,20 @@ class CLITests(unittest.TestCase):
     def persist(self):
         self.snapshots.append(deepcopy(self.state))
 
+    def test_snapshot_indexes_large_evidence_without_repeating_its_body(self):
+        source = {"id": "supplier-mail", "channel": "email", "vendor_id": "general",
+                  "body": "large-supplier-source " * 10000}
+        self.state["evidence"] = {source["id"]: source}
+        self.state["events"] = [{"type": "supplier_reply", "at": "2026-09-12T21:00:00Z",
+                                 "content": deepcopy(source)}]
+        result = cli.execute("snapshot", {}, self.state, self.persist, FakeAPI())
+        self.assertLess(len(json.dumps(result)), 5000)
+        self.assertEqual(result["evidence"][0]["id"], source["id"])
+        self.assertNotIn("large-supplier-source", json.dumps(result))
+        fetched = cli.execute("evidence", {"id": source["id"]}, self.state, self.persist, FakeAPI())
+        self.assertEqual(fetched, source)
+        self.assertFalse(self.snapshots)
+
     def test_confirmed_action_retry_returns_same_result_without_new_post(self):
         api = FakeAPI()
         first = cli.execute("send", inquiry(), self.state, self.persist, api)
@@ -63,6 +77,11 @@ class CLITests(unittest.TestCase):
         self.assertEqual(len(api.posts), 1)
         self.assertEqual(self.state["remaining_actions"], 4)
         self.assertEqual(api.posts[0][2]["idempotency_key"], "takeoff-task-1-ask-1")
+        # The live service requires the Markdown authoring field for delivery.
+        envelope = json.loads(api.posts[0][2]["body_markdown"])
+        self.assertEqual(envelope['message'], inquiry()['message'])
+        self.assertEqual(envelope['run_id'], 'run-1')
+        self.assertNotIn('body_text', api.posts[0][2])
 
     def test_changed_action_payload_cannot_reuse_confirmed_identity(self):
         api = FakeAPI()

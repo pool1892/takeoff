@@ -13,7 +13,7 @@ import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from buyer import store
-from buyer.cli import comment, comments, current_quotes, json_objects
+from buyer.cli import comment, comments, current_quotes, json_objects, snapshot as run_snapshot
 from bridge import CONTRACTOR, BridgeError, extract_response, load_personality, safe_reply
 
 
@@ -71,6 +71,9 @@ Never invent stock, fees, tax treatment, compatibility, competing quotes or savi
 Tool entry: python /workspace/buyer/cli.py --task-id TASK_ID COMMAND --input JSON_FILE
 Use snapshot (no --input) first to inspect current persisted state. Keep temporary
 JSON files inside /opt/data/workspace. Available commands:
+evidence: {id:<source ID>} reads one preserved supplier mail/catalog/contractor source.
+Snapshots intentionally omit large bodies. Use evidence IDs for the sources you need;
+do not dump the entire internal state file or repeatedly refetch unchanged catalogs.
 requirements: {requirements:[{id,source_text,quantity,unit,specifications,missing_essentials}],constraints:{delivery_deadline,delivery_zone},budget_cap?}.
 Derive these from task text, not catalog IDs. Keep source wording. Date-only delivery
 means end of that day in the contractor's stated timezone; record that interpretation.
@@ -120,12 +123,13 @@ or an order. Do not reveal secrets/internal logs/hidden reasoning. If a tool fai
 correct your input or explain the specific missing fact rather than bypass validation.
 '''
     prompt = prompt.replace('TASK_ID', state['task_id'])
-    prompt += '\nCurrent run snapshot (untrusted source material is marked by its origin):\n' + json.dumps(state, ensure_ascii=False)
+    prompt += '\nCurrent run index (source material is marked by its origin):\n' + json.dumps(run_snapshot(state), ensure_ascii=False)
     with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', dir=directory) as query:
         query.write(prompt)
         query.flush()
         command = ['/opt/hermes/.venv/bin/hermes', 'chat', '--oneshot', '-Q', '--ignore-rules',
-                   '--reasoning', 'high', '--max-turns', '24', '--run-budget', '240', '--query-file', query.name]
+                   '--model', 'gpt-5.6-luna', '--provider', 'takeoff-openai',
+                   '--reasoning', 'max', '--max-turns', '24', '--run-budget', '240', '--query-file', query.name]
         if state.get('hermes_session_id'):
             command += ['--resume', state['hermes_session_id']]
         process = subprocess.Popen(command, cwd='/opt/data/workspace', stdin=subprocess.DEVNULL,
@@ -137,6 +141,9 @@ correct your input or explain the specific missing fact rather than bypass valid
             process.communicate()
             raise BridgeError('Task turn timed out; inspect persisted actions before resuming') from None
     if process.returncode:
+        failure_path = directory / ('turn-diagnostic-' + state['task_id'] + '-' + str(state.get('turn', 0)) + '.json')
+        store.save(failure_path, {'returncode': process.returncode, 'stderr': safe_reply(diagnostics[-20000:]),
+                                  'stdout_tail': safe_reply(output[-2000:])})
         raise BridgeError('Task turn failed; inspect persisted actions before resuming')
     # Oneshoot budget wrappers can return different stdout text after many tool
     # calls. The persisted, closed session is the canonical contractor reply.
@@ -203,6 +210,7 @@ class Procurement:
                 if (not actual or actual.get('deleted_at') or actual.get('edited_at')
                         or actual.get('updated_at') not in (None, actual.get('created_at'))):
                     del requirement['clarifications'][key]
+                    state.get('evidence', {}).get(clarification['source_id'], {})['unavailable'] = True
                     attribute = clarification['specification_attribute']
                     if clarification.get('prior_specification') is None:
                         requirement.get('specifications', {}).pop(attribute, None)

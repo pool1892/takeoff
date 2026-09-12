@@ -122,7 +122,8 @@ def run_hermes(message, history, directory):
         query.write(prompt)
         query.flush()
         command = ['/opt/hermes/.venv/bin/hermes', 'chat', '--oneshot', '-Q',
-                   '--ignore-rules', '--reasoning', 'high', '--max-turns', '12',
+                   '--ignore-rules', '--model', 'gpt-5.6-luna', '--provider', 'takeoff-openai',
+                   '--reasoning', 'max', '--max-turns', '12',
                    '--run-budget', '240', '--query-file', query.name]
         process = subprocess.Popen(command, cwd='/opt/data/workspace',
                                    stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,

@@ -56,5 +56,5 @@ with OpenAI(api_key='synthetic-offline-check', base_url=agent.base_url,
             http_client=httpx.Client(transport=httpx.MockTransport(intercept))) as client:
     client.responses.create(**kwargs)
 
-assert captured == {'model': 'gpt-5.6-sol', 'reasoning': 'high', 'service_tier': 'priority'}, captured
+assert captured == {'model': 'gpt-5.6-luna', 'reasoning': 'max', 'service_tier': 'priority'}, captured
 print(json.dumps({'model_config_to_wire': 'passed', **captured, 'network': 'mocked'}))

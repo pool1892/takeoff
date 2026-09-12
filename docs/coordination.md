@@ -14,16 +14,18 @@ buyer fixture; provide public endpoint/address references and shareable examples
 ## Current buyer side
 
 - Chip is Christoph's personal agent in the `takeoffAI` Ambiguous workspace.
-  Its direct chat works through isolated Hermes with Sol, high reasoning, and
-  Fast requested via OpenAI's priority tier.
+  Its direct chat works through isolated Hermes. Current experiments use Luna,
+  maximum reasoning, and Fast requested via OpenAI's priority tier. Explicit
+  invocation arguments also change resumed sessions from the earlier Sol model.
 - Hermes and its tools have only the repository mounted, with non-root execution,
   read-only source, writable local state, and restricted HTTPS egress. Supplier
   destinations need explicit configuration when their endpoints are known.
 - The bridge handles contractor DMs and explicitly configured assigned tasks.
   Buyer tools now implement discovery checks, quote normalization, model-proposed
   action validation, scoped contractor decisions, and package evaluation. Focused
-  tests pass; the first live task/supplier/result run is being exercised. This is
-  not yet a completed full 25-component procurement demonstration.
+  tests pass. The first live three-line task completed at 14:35 PDT with a
+  validated $2,300 delivered supplier quote and the recommendation published in
+  Ambiguous. The full 25-component package remains in progress.
 - The accepted starting flow is a concrete request, with questions only for
   missing essentials. A priority interview is not a prerequisite for discovery.
 - Product discovery and selection come before negotiation: material sheet →
@@ -45,7 +47,7 @@ container has passed. The public host is explicitly allowed by the egress proxy.
 
 Chip sends procurement mail from `takeoff-hermes@takeoffai.ambi.cc` to
 `takeoff-overstock@spike-team.ambi.cc` for the first path. The supplier confirmed
-the buyer identity mapping and is starting its sender-scoped worker. Structured
+the buyer identity mapping and its sender-scoped worker produced the first live quote. Structured
 messages use `takeoff.supplier.v1`, a fresh supplier run ID, vendor ID and message;
 replies preserve inquiry correlation and contain canonical quote JSON. The first
 three-line run is `run_402632f04bb94032b83ffa8ecd69f96f`; a new independent trial
@@ -53,8 +55,8 @@ requires a fresh supplier run. These are simulated businesses communicating over
 real services. `tax_treatment=all_fixture_taxes_included` explicitly means zero
 additional tax for this synthetic scenario, not a real tax rule.
 
-Start with one requirement and one remote supplier so both sides can connect
-early, then expand to the core website, email, and agent-to-agent channels.
+The first three requirements and one remote supplier are connected; next expand
+to all 25 requirements and the core website, email, and agent-to-agent channels.
 The supplier agent retains its separate Ambiguous workspace and private state.
 The documented Ambiguous API has no verified general cross-workspace agent-chat
 transport yet; agree and test the exact channel rather than assuming one exists.
@@ -83,6 +85,8 @@ presentation. Keep the corresponding references and input/output examples small
 and explicit so buyer, supplier, and UX work can proceed in parallel.
 
 Fable in OMP owns the separate optional voice adapter under `integrations/voice/`.
-See [its handoff](voice-handoff.md). It uses the existing remote supplier audio
-protocol and stays inside the buyer container. Mock voice work proceeds while
-the endpoint and scoped supplier token are coordinated; voice cannot block core.
+See [its handoff](voice-handoff.md). It stays inside the buyer container. Christoph
+now wants a human teammate playing the seller through browser WebRTC for the
+voice demo. The `voice-web` launcher publishes a localhost-only session server;
+use an SSH tunnel over Tailscale from the Mac. The separate AI supplier adapter
+still uses the public supplier audio protocol. Voice cannot block the core path.

@@ -126,8 +126,9 @@ See [Hermes setup and isolation](docs/hermes.md) and
 The buyer workspace reference is
 `takeoffAI`; verify its exact identity using the new buyer agent's token. Use a
 dedicated OpenAI API key. `.env.example` contains variable names only. **Chip** is
-the contractor's personal Takeoff agent in Ambiguous; its DM listener uses Sol
-with high reasoning and Fast processing. Stop it with `scripts/hermes bridge-stop`.
+the contractor's personal Takeoff agent in Ambiguous; its experimental runtime
+uses `gpt-5.6-luna` with maximum reasoning (`max`) and Fast processing.
+Stop it with `scripts/hermes bridge-stop`.
 
 Keep local environments, credentials, runtime state, and raw captures out of Git.
 Commit shared code, instructions, intentionally sanitized fixtures, and concise
