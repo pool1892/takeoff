@@ -83,6 +83,31 @@ class CLITests(unittest.TestCase):
         self.assertEqual(envelope['run_id'], 'run-1')
         self.assertNotIn('body_text', api.posts[0][2])
 
+    def test_assess_all_matches_single_checks_and_skips_unknown_mapping(self):
+        self.state['candidates'] = {}
+        base = {'revision': 1, 'vendor_id': 'general', 'unit': 'sheet', 'pack_size': 1,
+                'stock': 20, 'specifications': {'type': 'regular'}, 'requirement_id': 'wall'}
+        self.state['products'] = {
+            'board': {**deepcopy(base), 'id': 'board'},
+            'alternative': {**deepcopy(base), 'id': 'alternative', 'specifications': {'type': 'moisture'}},
+            'unmapped': {**deepcopy(base), 'id': 'unmapped', 'requirement_id': 'unknown-line'},
+            'missing-map': {**deepcopy(base), 'id': 'missing-map', 'requirement_id': None}}
+        singles = deepcopy(self.state)
+        api = FakeAPI()
+        for product_id in ('board', 'alternative'):
+            cli.execute('assess', {'requirement_id': 'wall', 'product_id': product_id}, singles, lambda: None, api)
+        result = cli.execute('assess_all', {}, self.state, self.persist, api)
+        self.assertEqual(self.state['candidates'], singles['candidates'])
+        self.assertEqual(result['assessed'], 2)
+        self.assertEqual(sum(result['status_counts'].values()), 2)
+        self.assertEqual({r['candidate_id'] for r in result['candidates']}, set(singles['candidates']))
+        self.assertEqual({r['product_id'] for r in result['skipped']}, {'unmapped', 'missing-map'})
+        self.assertEqual(len(self.snapshots), 1)
+        self.assertEqual(self.snapshots[0]['candidates'], singles['candidates'])
+        repeated = cli.execute('assess_all', {}, self.state, self.persist, api)
+        self.assertEqual(repeated, result)
+        self.assertEqual(api.calls, [])
+
     def test_changed_action_payload_cannot_reuse_confirmed_identity(self):
         api = FakeAPI()
         cli.execute("send", inquiry(), self.state, self.persist, api)

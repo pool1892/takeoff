@@ -17,6 +17,74 @@ from buyer.cli import comment, comments, current_quotes, json_objects, snapshot 
 from bridge import CONTRACTOR, BridgeError, extract_response, load_personality, safe_reply
 
 
+MAX_CONSECUTIVE_CONTINUATIONS = 3
+MAX_TOTAL_CONTINUATIONS = 12
+
+
+def progress_fields(before, after):
+    """Compare durable work, not repeated reads, timestamps, or progress comments."""
+    fields = ('requirements', 'constraints', 'products', 'candidates', 'quotes', 'approvals', 'plan')
+    def value(state, field):
+        result = deepcopy(state.get(field))
+        if field == 'plan' and isinstance(result, dict):
+            result.pop('evaluated_at', None)
+        return result
+    changed = [field for field in fields if value(before, field) != value(after, field)]
+    # A newly fetched manifest is useful discovery even before it yields products.
+    # Source IDs are content-derived; refreshing the same page is not progress.
+    def catalog_ids(state):
+        return {key for key, source in state.get('evidence', {}).items() if source.get('channel') == 'website'}
+    if catalog_ids(after) - catalog_ids(before):
+        changed.append('catalog_evidence')
+    return changed
+
+
+def reply_matches(action, source):
+    if source.get('channel') != 'supplier_email' or source.get('vendor_id') != action.get('input', {}).get('vendor_id'):
+        return False
+    if action['id'] in source.get('action_ids', []):
+        return True
+    # Older persisted evidence predates action_ids; retain exact echoed-ID correlation.
+    return bool(re.search(r'(?<![A-Za-z0-9_-])' + re.escape(action['id']) + r'(?![A-Za-z0-9_-])',
+                          (source.get('subject') or '') + ' ' + (source.get('body') or '')))
+
+
+def successful_turn(state, before):
+    """Schedule bounded internal work only after a successful native turn."""
+    if state.get('phase') == 'complete':
+        return None
+    actions = list(state.get('actions', {}).values())
+    uncertain = [a['id'] for a in actions if a.get('status') not in ('sent', 'delivered') or not a.get('result')]
+    uncertain += [key for key, record in state.get('publications', {}).items() if record.get('status') != 'sent']
+    if state.get('paused') or uncertain:
+        state.update(phase='blocked', paused=True)
+        reason = 'uncertain_transmission' if uncertain else 'paused'
+        state['continuation_blocker'] = reason
+        store.event(state, 'continuation_blocked', {'reason': reason, 'action_ids': uncertain})
+        return 'I’ve paused because a recorded action needs reconciliation before I can safely continue. Existing work is preserved.'
+    pending = [a['id'] for a in actions if not any(reply_matches(a, source) for source in state.get('evidence', {}).values())]
+    decisions = [p['id'] for p in state.get('proposals', {}).values() if p.get('status') == 'pending']
+    if pending or decisions:
+        state.update(phase='waiting', autonomous_continuations=0)
+        state.pop('continuation_blocker', None)
+        store.event(state, 'awaiting_external_input', {'action_ids': pending, 'proposal_ids': decisions})
+        return None
+    progress = progress_fields(before, state)
+    consecutive = state.get('autonomous_continuations', 0)
+    total = state.get('total_autonomous_continuations', 0)
+    if progress and consecutive < MAX_CONSECUTIVE_CONTINUATIONS and total < MAX_TOTAL_CONTINUATIONS:
+        state.update(phase='ready', autonomous_continuations=consecutive + 1, total_autonomous_continuations=total + 1)
+        state.pop('continuation_blocker', None)
+        store.event(state, 'continuation_scheduled', {'progress_fields': progress, 'consecutive': consecutive + 1, 'total': total + 1})
+        return None
+    reason = 'no_internal_progress' if not progress else 'continuation_limit'
+    state.update(phase='blocked', continuation_blocker=reason)
+    store.event(state, 'continuation_blocked', {'reason': reason, 'progress_fields': progress})
+    if not progress:
+        return 'This turn did not record new procurement work, and no supplier reply or approval is pending. The run needs review before continuing.'
+    return 'I’ve reached the automatic continuation limit before completing the package. The recorded work is preserved; the run needs review before continuing.'
+
+
 def mail_text(message):
     text = message.get('body_text') or message.get('body_markdown') or message.get('body')
     if isinstance(text, str) and text.strip():
@@ -74,6 +142,12 @@ JSON files inside /opt/data/workspace. Available commands:
 evidence: {id:<source ID>} reads one preserved supplier mail/catalog/contractor source.
 Snapshots intentionally omit large bodies. Use evidence IDs for the sources you need;
 do not dump the entire internal state file or repeatedly refetch unchanged catalogs.
+Use this documented CLI and the source-offers skill. Do not read implementation or
+test files unless a concrete CLI error requires diagnosis. Finish the next actionable
+procurement step in this turn; a statement of intended work is not recorded progress.
+Ask for missing contractor essentials while independently sourcing and requesting
+quotes for the other materials. Missing facing or fitting intent must not postpone
+the first inquiries for materials whose requirements are already clear.
 requirements: {requirements:[{id,source_text,quantity,unit,specifications,missing_essentials}],constraints:{delivery_deadline,delivery_zone},budget_cap?}.
 Derive these from task text, not catalog IDs. Keep source wording. Date-only delivery
 means end of that day in the contractor's stated timezone; record that interpretation.
@@ -94,6 +168,12 @@ the actual contractor answer; model or supplier assertions cannot fill these gap
 catalog: {url:<configured catalog URL or public path on same allowed host>} returns
 actual catalog data and records its evidence/products. Fetch manifests/catalogs as needed.
 assess: {requirement_id,product_id}. Must assess prospective choices using public facts.
+assess_all: {} assesses every saved product whose catalog requirement_id matches a
+saved source requirement. Use this after requirements and catalogs are recorded;
+it returns compact candidate IDs, product IDs, statuses and skipped mappings. It
+does not select products or send inquiries. Do not write scripts to parse displayed
+catalog text or line-numbered file output. The single assess result has top-level
+candidate_id/status plus assessment containing the same eligibility findings.
 send: {id:<stable unique action ID>,type:inquiry|counter,run_id,request_revision,
 vendor_id,message,previous_quote_id?,target_total?,currency?,items?}. Use current scope
 from snapshot. The message must state concrete requirements/quantities, delivery,
@@ -123,6 +203,11 @@ or an order. Do not reveal secrets/internal logs/hidden reasoning. If a tool fai
 correct your input or explain the specific missing fact rather than bypass validation.
 '''
     prompt = prompt.replace('TASK_ID', state['task_id'])
+    if state.get('autonomous_continuations'):
+        prompt += ('\nThis is a bounded continuation of your successful earlier turn in the same session. '
+                   'It recorded procurement progress but had no outstanding supplier reply or decision. '
+                   'Use the saved work to perform the next actionable step; this wakeup does not imply '
+                   'new supplier evidence. Do not repeat confirmed sends.\n')
     prompt += '\nCurrent run index (source material is marked by its origin):\n' + json.dumps(run_snapshot(state), ensure_ascii=False)
     with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', dir=directory) as query:
         query.write(prompt)
@@ -285,13 +370,14 @@ class Procurement:
                 continue
             # Accept replies to one of our actual messages, or exact echoed action IDs.
             reply_ids = {m.get('in_reply_to'), *(m.get('references') or [])}
-            correlated = any((a['result'].get('message_id') and a['result']['message_id'] in reply_ids)
+            correlated = [a['id'] for a in prior_actions if (a['result'].get('message_id') and a['result']['message_id'] in reply_ids)
                              or re.search(r'(?<![A-Za-z0-9_-])' + re.escape(a['id']) + r'(?![A-Za-z0-9_-])',
-                                          m.get('subject', '') + ' ' + body) for a in prior_actions)
+                                          m.get('subject', '') + ' ' + body)]
             if not correlated:
                 continue
             state['evidence'][m['id']] = {'id': m['id'], 'channel': 'supplier_email', 'vendor_id': senders[address],
                 'from': address, 'body': body, 'subject': m.get('subject'), 'observed_at': store.now(),
+                'action_ids': correlated,
                 'inbound_auth': auth, 'message_id': m.get('message_id'), 'mode': 'live_remote_simulated_business'}
             store.event(state, 'supplier_reply', {'source_id': m['id'], 'vendor_id': senders[address]}, m['id'])
             changed = True
@@ -336,6 +422,8 @@ class Procurement:
                     comment(self.api, state, persist, 'acknowledge',
                         'I’m matching your material list to the suppliers’ catalogs, then I’ll compare complete delivered offers. I’ll bring you any material specification changes for approval.')
                     self.api.call(f"/api/tasks/{task['id']}", 'PATCH', {'status': 'in_progress'})
+                if changed:
+                    state['autonomous_continuations'] = 0
                 state['phase'] = 'generating'
                 state['turn'] = state.get('turn', 0) + 1
                 persist()
@@ -344,9 +432,12 @@ class Procurement:
             try:
                 session_id, answer = self.runner(snapshot, store.home())
                 with store.transaction(task['id']) as (state, persist):
-                    state.update(hermes_session_id=session_id, phase='complete' if state.get('phase') == 'complete' else 'waiting')
+                    state['hermes_session_id'] = session_id
+                    blocker = successful_turn(state, snapshot)
                     persist()
                     comment(self.api, state, persist, 'turn-' + str(snapshot['turn']), answer)
+                    if blocker:
+                        comment(self.api, state, persist, 'continuation-blocked-' + str(snapshot['turn']), blocker)
             except (BridgeError, ValueError, OSError) as error:
                 with store.transaction(task['id']) as (state, persist):
                     state.update(phase='failed', paused=True)

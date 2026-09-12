@@ -221,6 +221,24 @@ def execute(command, payload, state, persist, api):
         store.event(state, 'catalog', {'source_id': source_id, 'products': len(products)})
         persist()
         return {'source_id': source_id, 'data': data}
+    if command == 'assess_all':
+        requirement_ids = {r['id'] for r in state.get('requirements', [])}
+        results, skipped, counts = [], [], {}
+        for product_id, product in sorted(state.get('products', {}).items()):
+            requirement_id = product.get('requirement_id')
+            if not isinstance(requirement_id, str) or requirement_id not in requirement_ids:
+                skipped.append({'product_id': product_id, 'requirement_id': requirement_id,
+                                'reason': 'No matching saved requirement for catalog mapping'})
+                continue
+            candidate = execute('assess', {'requirement_id': requirement_id, 'product_id': product_id},
+                                state, lambda: None, api)
+            status = candidate['assessment']['status']
+            counts[status] = counts.get(status, 0) + 1
+            results.append({'candidate_id': candidate['id'], 'requirement_id': requirement_id,
+                            'product_id': product_id, 'status': status})
+        persist()
+        return {'assessed': len(results), 'status_counts': counts, 'candidates': results,
+                'skipped': skipped}
     if command == 'assess':
         from buyer.discovery import assess_candidate
         requirement = next(r for r in state['requirements'] if r['id'] == payload['requirement_id'])
@@ -352,7 +370,7 @@ def current_quotes(state):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--task-id', required=True)
-    parser.add_argument('command', choices=['snapshot', 'evidence', 'requirements', 'clarify', 'catalog', 'assess', 'send', 'offer', 'decision', 'plan', 'publish'])
+    parser.add_argument('command', choices=['snapshot', 'evidence', 'requirements', 'clarify', 'catalog', 'assess', 'assess_all', 'send', 'offer', 'decision', 'plan', 'publish'])
     parser.add_argument('--input', help='JSON file; omit for JSON stdin, except snapshot')
     args = parser.parse_args()
     if os.environ.get('TAKEOFF_SANDBOX') != '1' or not Path('/.dockerenv').exists():

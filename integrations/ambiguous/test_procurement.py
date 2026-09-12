@@ -11,7 +11,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from procurement import Procurement, mail_text, task_response
+from procurement import Procurement, mail_text, task_response, successful_turn
 from bridge import CONTRACTOR, BridgeError
 from buyer import store
 from buyer.cli import execute
@@ -161,6 +161,132 @@ class ProcurementTests(unittest.TestCase):
         self.assertEqual(self.turns[-1]['hermes_session_id'], 'session-1')
         self.assertEqual(len([c for c in self.api.calls if c[0] == '/api/mail/send']), 1)
         self.assertEqual(self.state()['remaining_actions'], 39)
+
+    def test_catalog_progress_continues_same_session_then_waits_for_inquiry(self):
+        action = {'id': 'inquiry-1', 'type': 'inquiry', 'run_id': 'run-1', 'request_revision': 1,
+                  'vendor_id': 'vendor-1', 'message': 'Please quote the materials with clear requirements.'}
+        def runner(snapshot, directory):
+            self.turns.append(deepcopy(snapshot))
+            with store.transaction(snapshot['task_id']) as (state, persist):
+                if len(self.turns) == 1:
+                    # Missing intent on one material must not stall the rest of discovery.
+                    state['requirements'] = [{'id': 'r1', 'missing_essentials': ['facing']}, {'id': 'r2'}]
+                    state['products'] = {'p2': {'id': 'p2'}}
+                    persist()
+                else:
+                    execute('send', action, state, persist, self.api)
+            return 'same-session', 'Recorded the next procurement step.'
+        Procurement(self.api, AGENT, runner).poll()
+        self.assertEqual(self.state()['phase'], 'ready')
+        Procurement(self.api, AGENT, runner).poll()
+        self.assertEqual(self.turns[1]['hermes_session_id'], 'same-session')
+        self.assertEqual(self.state()['phase'], 'waiting')
+        Procurement(self.api, AGENT, runner).poll()
+        self.assertEqual(len(self.turns), 2)
+        self.assertEqual(len([c for c in self.api.calls if c[0] == '/api/mail/send']), 1)
+
+    def test_success_without_durable_progress_stops_and_reports_blocker(self):
+        self.listener.poll()
+        self.listener.poll()
+        self.assertEqual(len(self.turns), 1)
+        self.assertEqual(self.state()['phase'], 'blocked')
+        self.assertEqual(self.state()['continuation_blocker'], 'no_internal_progress')
+        self.assertTrue(any('did not record new procurement work' in c['content']
+                            for c in self.api.comment_records['task-1']))
+
+    def test_continuations_are_bounded_even_when_each_turn_records_work(self):
+        def runner(snapshot, directory):
+            self.turns.append(snapshot)
+            with store.transaction(snapshot['task_id']) as (state, persist):
+                state['products']['p' + str(len(self.turns))] = {'id': 'new-product'}
+                persist()
+            return 'same-session', 'Another catalog product recorded.'
+        listener = Procurement(self.api, AGENT, runner)
+        for _ in range(6):
+            listener.poll()
+        self.assertEqual(len(self.turns), 4)  # Initial turn plus at most three continuations.
+        self.assertEqual(self.state()['continuation_blocker'], 'continuation_limit')
+        self.assertEqual(self.state()['total_autonomous_continuations'], 3)
+
+    def test_failure_after_partial_work_never_autocontinues(self):
+        def runner(snapshot, directory):
+            self.turns.append(snapshot)
+            with store.transaction(snapshot['task_id']) as (state, persist):
+                state['products']['p1'] = {'id': 'p1'}
+                persist()
+            raise BridgeError('Native turn failed after catalog discovery')
+        listener = Procurement(self.api, AGENT, runner)
+        listener.poll()
+        listener.poll()
+        self.assertEqual(len(self.turns), 1)
+        self.assertEqual(self.state()['phase'], 'failed')
+        self.assertTrue(self.state()['paused'])
+
+    def test_uncertain_send_after_success_requires_reconciliation(self):
+        state = self.initialized()
+        before = deepcopy(state)
+        state['products']['p1'] = {'id': 'p1'}
+        state['actions']['inquiry-1'].update(status='sending', result=None)
+        notice = successful_turn(state, before)
+        self.assertTrue(state['paused'])
+        self.assertEqual(state['continuation_blocker'], 'uncertain_transmission')
+        self.assertIn('reconciliation', notice)
+
+    def test_reply_only_releases_its_exact_action_not_later_counter(self):
+        state = self.initialized()
+        state['actions']['inquiry-1']['result']['message_id'] = '<original-mail>'
+        reply = self.mail(subject='run-1 supplier facts', body_text='Facts for run-1.', in_reply_to='<original-mail>')
+        self.listener.ingest(state, [], [reply])
+        self.assertEqual(state['evidence']['reply-1']['action_ids'], ['inquiry-1'])
+        before = deepcopy(state)
+        state['products']['p1'] = {'id': 'p1'}
+        successful_turn(state, before)
+        self.assertEqual(state['phase'], 'ready')
+        state['actions']['counter-1'] = {'id': 'counter-1', 'input': {'vendor_id': 'vendor-1'},
+                                          'status': 'sent', 'result': {'id': 'later-mail'}}
+        successful_turn(state, before)
+        self.assertEqual(state['phase'], 'waiting')
+
+    def test_pending_decision_waits_and_complete_plan_stays_complete(self):
+        state = self.decision_state()
+        state['actions'] = {}
+        before = deepcopy(state)
+        state['products']['p1'] = {'id': 'p1'}
+        successful_turn(state, before)
+        self.assertEqual(state['phase'], 'waiting')
+        state['phase'] = 'complete'
+        successful_turn(state, before)
+        self.assertEqual(state['phase'], 'complete')
+
+    def test_total_cap_survives_external_wakeup_and_timestamp_only_is_not_progress(self):
+        state = self.initialized()
+        state['actions'] = {}
+        state['total_autonomous_continuations'] = 12
+        state['autonomous_continuations'] = 0
+        before = deepcopy(state)
+        state['products']['p1'] = {'id': 'p1'}
+        successful_turn(state, before)
+        self.assertEqual(state['continuation_blocker'], 'continuation_limit')
+        state['total_autonomous_continuations'] = 0
+        state['plan'] = {'complete': False, 'evaluated_at': 'old'}
+        before = deepcopy(state)
+        state['plan']['evaluated_at'] = 'new'
+        store.event(state, 'catalog', {'products': 1})
+        state['publications']['another-update'] = {'status': 'sent'}
+        successful_turn(state, before)
+        self.assertEqual(state['continuation_blocker'], 'no_internal_progress')
+
+    def test_new_manifest_counts_but_refreshing_identical_source_does_not(self):
+        state = self.initialized()
+        state['actions'] = {}
+        before = deepcopy(state)
+        state['evidence']['catalog-content-hash'] = {'channel': 'website', 'observed_at': 'first', 'data': {'catalogs': ['catalog-url']}}
+        successful_turn(state, before)
+        self.assertEqual(state['phase'], 'ready')
+        before = deepcopy(state)
+        state['evidence']['catalog-content-hash']['observed_at'] = 'later'
+        successful_turn(state, before)
+        self.assertEqual(state['continuation_blocker'], 'no_internal_progress')
 
     def test_interrupted_turn_pauses_without_invoking_runner(self):
         with store.transaction('task-1') as (state, persist):

@@ -98,6 +98,62 @@ def _check_numbers(value):
             _check_numbers(item)
 
 
+def _comparable_package(offer, run, offers, decisions):
+    """Validate the quoted subset and measure real requirement/variant coverage.
+
+    Reuse buying-plan guards rather than trusting sale counts or stale candidate
+    eligibility. A quote above budget can still be negotiated; the action's
+    proposed target remains subject to the independent budget checks below.
+    """
+    from .planning import evaluate_plan
+
+    raw = offer.get('raw', offer)
+    included = {line.get('requirement_id') for line in raw.get('lines', [])}
+    requirements = [r for r in _records(run.get('requirements')) if r.get('id') in included]
+    if not included or {r.get('id') for r in requirements} != included:
+        raise ValueError('competing package has unknown or missing requirement scope')
+    scope = deepcopy(run)
+    scope['requirements'] = requirements
+    scope['quotes'] = _records(offers)
+    scope['authority'] = dict(scope.get('authority') or {})
+    scope['authority'].pop('budget_cap', None)
+    scope['constraints'] = dict(scope.get('constraints') or {})
+    scope['constraints'].pop('budget', None)
+    revisions = {r['id']: r.get('revision', run.get('request_revision')) for r in requirements}
+    scope['candidates'] = [c for c in _records(scope.get('candidates'))
+        if c.get('current') is not False and not c.get('superseded_by')
+        and c.get('run_id', run.get('run_id')) == run.get('run_id')
+        and c.get('request_revision', run.get('request_revision')) == run.get('request_revision')
+        and c.get('requirement_revision', revisions.get(c.get('requirement_id'))) == revisions.get(c.get('requirement_id'))]
+    plan = evaluate_plan(scope, [offer], approvals=_records(decisions), now=run.get('evaluated_at'))
+    if not plan['complete']:
+        raise ValueError('competing package is not currently eligible: ' + '; '.join(plan['blockers'][:3]))
+    coverage = {}
+    for selected in plan['selected_offers']:
+        for line in selected['lines']:
+            assessment = line['assessment']
+            product = assessment['product']
+            if product.get('current') is False or product.get('superseded_by'):
+                raise ValueError('competing package product is no longer current')
+            if line.get('product_revision') is not None and line['product_revision'] != product.get('revision'):
+                raise ValueError('competing quote refers to an old product revision')
+            amount = _number(line['coverage_quantity'], 'normalized coverage')
+            per_sale = amount / _number(line['quantity'], 'selling quantity')
+            if (line.get('units_per_sale_unit') is not None and
+                    _number(line['units_per_sale_unit'], 'quoted coverage per sale unit') != per_sale):
+                raise ValueError('quoted coverage conversion conflicts with current product facts')
+            if (line.get('covered_quantity') is not None and
+                    _number(line['covered_quantity'], 'quoted covered quantity') != amount):
+                raise ValueError('quoted covered quantity conflicts with current product facts')
+            if line.get('requirement_unit') is not None and line['requirement_unit'] != line['coverage_unit']:
+                raise ValueError('quoted requirement unit conflicts with current product facts')
+            if line.get('variant') is not None and line['variant'] != assessment.get('variant_id'):
+                raise ValueError('quoted variant conflicts with required product variant')
+            key = (line['requirement_id'], assessment.get('variant_id') or '', line['coverage_unit'])
+            coverage[key] = coverage.get(key, Decimal(0)) + amount
+    return coverage, plan['total_basis']
+
+
 def validate_action(action, run, offers, decisions):
     """Return a validated copy or raise ValueError; never send or select a move.
 
@@ -161,6 +217,7 @@ def validate_action(action, run, offers, decisions):
     competing = action.get('competing_quote_ids', [])
     if action.get('competing_quote_id'):
         competing = [*competing, action['competing_quote_id']]
+    comparison = _comparable_package(previous, run, offers, decisions) if previous and competing else None
     for quote_id in competing:
         alternative = _current_offer(quote_id, run, offers)
         if 'competing_total' in action and (len(competing) != 1 or
@@ -169,12 +226,10 @@ def validate_action(action, run, offers, decisions):
             raise ValueError('claimed competing total does not match its confirmed quote')
         if alternative.get('vendor_id') == vendor_id:
             raise ValueError('competing quote must come from another supplier')
-        if previous:
-            def coverage(offer):
-                return sorted((line.get('requirement_id'), str(line.get('quantity')), line.get('unit'))
-                              for line in offer.get('lines', []))
-            if not coverage(previous) or coverage(previous) != coverage(alternative):
-                raise ValueError('competing quote does not cover the same requirements and quantities')
+        alternative_comparison = _comparable_package(alternative, run, offers, decisions)
+        if comparison:
+            if comparison != alternative_comparison:
+                raise ValueError('competing quote does not cover the same requirement quantities, variants, and tax basis')
             if previous.get('currency') != alternative.get('currency'):
                 raise ValueError('competing quote currency differs')
     if 'competing_total' in action and not competing:
