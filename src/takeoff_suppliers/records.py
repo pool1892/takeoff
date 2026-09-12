@@ -34,10 +34,11 @@ def public_offer(offer):
         "id", "quote_id", "run_id", "vendor_id", "supplier_id", "buyer_id", "request_id",
         "revision", "previous_quote_id", "status", "subtotal", "total", "currency",
         "delivery_slot", "created_at", "expires_at", "conditions", "simulated",
-        "evidence_refs", "accepted_at", "commitment_id", "approval_refs",
+        "evidence_refs", "accepted_at", "commitment_id", "approval_refs", "tax_treatment",
     ))
     result["lines"] = [pick(line, ("product_id", "name", "quantity", "unit", "unit_price",
-                                  "line_total", "requirement_id", "substitution_for"))
+                                  "line_total", "requirement_id", "substitution_for",
+                                  "units_per_sale_unit", "requirement_unit", "covered_quantity", "variant"))
                        for line in offer.get("lines", [])]
     result["fees"] = [pick(fee, ("name", "amount")) for fee in offer.get("fees", [])]
     result["discounts"] = [pick(discount, ("code", "description", "amount"))
@@ -46,7 +47,7 @@ def public_offer(offer):
     if "draft_order" in offer:
         result["draft_order"] = pick(offer["draft_order"],
                                     ("id", "quote_id", "revision", "supplier_id", "total",
-                                     "currency", "status"))
+                                     "currency", "status", "tax_treatment"))
         result["draft_order"].update(lines=result["lines"], delivery=result["delivery"])
     return result
 
@@ -108,6 +109,7 @@ class AmbiguousRecords:
                    "Stock and delivery capacity must be checked when ordering.\n\n"
                    f"Scenario: {run['scenario_label']}\n\nVersion: {run['scenario_version']}\n\n"
                    f"Currency: {catalog['currency']}\n\n"
+                   f"Tax treatment: {catalog.get('tax_treatment', 'unknown/not_modeled')}\n\n"
                    + markdown_table(["Product", "Name", "Unit", "Pack", "List price", "Stock",
                                      "Minimum", "Substitution for", "Source"], rows))
         content += "\n\n## Delivery\n\n" + markdown_table(
@@ -121,7 +123,9 @@ class AmbiguousRecords:
         # Specifications come exclusively from Market.catalog's public projection.
         content += "\n\n## Product specifications\n\n"
         for product in catalog["products"]:
-            content += f"### {product['id']}\n\n```json\n" + json.dumps(
+            content += (f"### {product['id']}\n\n"
+                        f"One {product['unit']} supplies {product.get('units_per_sale_unit', '1')} "
+                        f"{product.get('requirement_unit', product['unit'])}.\n\n```json\n") + json.dumps(
                 product.get("specifications"), indent=2, ensure_ascii=False) + "\n```\n\n"
         return self._create("catalog", [run_id, vendor_id],
                             {"type": "doc", "title": title, "content": content, "visibility": "workspace"})
@@ -152,6 +156,7 @@ class AmbiguousRecords:
         self._vendor(vendor_id)
         catalog = market.catalog(run_id, vendor_id)
         fields = (("id", "Product"), ("name", "Name"), ("unit", "Selling unit"),
+                  ("units_per_sale_unit", "Coverage per selling unit"), ("requirement_unit", "Coverage unit"),
                   ("pack_size", "Pack size"), ("list_price", "List price"),
                   ("stock", "Stock"), ("minimum_quantity", "Minimum quantity"), ("source", "Source"))
         # Text cells retain exact decimal amounts and keep unknown values explicit.

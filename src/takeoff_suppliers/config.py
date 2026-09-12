@@ -35,7 +35,8 @@ def defaults(home=DEFAULT_HOME):
             'email': None, 'chat_threads': [], 'buyers': {}, 'chat_buyers': {},
         }
     return {'database_path': str(home / 'market.sqlite'), 'transport_path': str(home / 'transport.sqlite'),
-            'scenario_path': None, 'buyer_id': 'demo-buyer', 'buyer_workspace_id': None,
+            'scenario_path': str(Path(__file__).parent / 'fixtures' / 'house.json'),
+            'buyer_id': 'demo-buyer', 'buyer_workspace_id': None,
             'supplier_workspace_id': None, 'supplier_workspace_slug': None,
             'model': 'gpt-6-astra', 'runtime_backend': 'codex', 'exa_mcp_url': None, 'vendors': vendors}
 

@@ -65,6 +65,21 @@ def _text(value: Any, name: str, limit: int = 500) -> str:
     return value.strip()
 
 
+def _coverage(value: Any) -> Decimal:
+    """Exact positive conversion/coverage, separate from two-decimal currency."""
+    try:
+        number = Decimal(str(value))
+        if not number.is_finite() or not 0 < number <= Decimal("1000000000"):
+            raise InvalidOperation
+        return number
+    except (InvalidOperation, ValueError, TypeError):
+        raise MarketError("invalid_conversion", "Coverage must be a finite positive decimal.") from None
+
+
+def _decimal_text(value: Decimal) -> str:
+    return format(value, "f")
+
+
 class Market:
     """A frozen scenario per run, with separate public and private records.
 
@@ -147,6 +162,14 @@ class Market:
         for req in requirements.values():
             _integer(req["quantity"], "requirement quantity")
             _text(req["unit"], "requirement unit")
+            variants = req.get("required_variants", {})
+            if not isinstance(variants, dict):
+                raise ValueError("Required variants must map variant names to required coverage.")
+            for variant, quantity in variants.items():
+                _text(variant, "variant")
+                _coverage(quantity)
+            if sum((_coverage(v) for v in variants.values()), Decimal(0)) > req["quantity"]:
+                raise ValueError("Variant quantities cannot exceed the total requirement.")
         vendors = set()
         product_ids = set()
         for vendor in scenario["vendors"]:
@@ -177,8 +200,13 @@ class Market:
                 if product.get("substitution_for") not in (None, product["requirement_id"]):
                     raise ValueError("Substitution must reference the product's requirement.")
                 req = requirements[product["requirement_id"]]
-                if product["unit"] != req["unit"]:
-                    raise ValueError("Scenario products must use the requirement's selling unit.")
+                if product["unit"] != req["unit"] and "units_per_sale_unit" not in product:
+                    raise ValueError("Different selling units require an explicit coverage conversion.")
+                _coverage(product.get("units_per_sale_unit", "1"))
+                if product.get("requirement_unit", req["unit"]) != req["unit"]:
+                    raise ValueError("Product conversion must target the requirement unit.")
+                if req.get("required_variants") and product.get("variant") not in req["required_variants"]:
+                    raise ValueError("Products must identify a required variant.")
                 if not product.get("substitution_for") and any(
                     product["specifications"].get(k) != v for k, v in req["specifications"].items()
                 ):
@@ -266,6 +294,7 @@ class Market:
             )}
             snapshot = json.loads(run["snapshot"])
             public.update(simulated=True, scenario_label=snapshot["label"],
+                          tax_treatment=snapshot.get("tax_treatment", "unknown/not_modeled"),
                           requirements=snapshot["requirements"],
                           vendors=[self._vendor_public(v) for v in snapshot["vendors"]])
             return public
@@ -283,12 +312,22 @@ class Market:
             run = self._run(db, run_id)
             snapshot = json.loads(run["snapshot"])
             vendor = self._vendor(snapshot, vendor_id)
+            requirements = {r["id"]: r for r in snapshot["requirements"]}
             products = []
             for product in vendor["products"]:
                 public = {k: product.get(k) for k in (
                     "id", "name", "requirement_id", "specifications", "unit", "pack_size",
                     "list_price", "minimum_quantity", "substitution_for", "alternatives"
                 )}
+                public.update(
+                    units_per_sale_unit=_decimal_text(_coverage(product.get("units_per_sale_unit", "1"))),
+                    requirement_unit=requirements[product["requirement_id"]]["unit"],
+                    variant=product.get("variant"),
+                )
+                for field in ("product_info_ref", "evidence_kind", "eligibility",
+                              "unresolved_clarifications", "related_requirements", "substitution_difference"):
+                    if field in product:
+                        public[field] = product[field]
                 public["stock"] = db.execute(
                     "SELECT available FROM market_stock WHERE run_id=? AND vendor_id=? AND product_id=?",
                     (run_id, vendor_id, product["id"]),
@@ -299,6 +338,9 @@ class Market:
             slots = []
             for slot in vendor["slots"]:
                 public = {k: slot[k] for k in ("id", "label", "days", "fee")}
+                for field in ("delivery_date", "delivery_zone", "quote_basis", "needs_deadline_approval"):
+                    if field in slot:
+                        public[field] = slot[field]
                 public["capacity"] = db.execute(
                     "SELECT available FROM market_capacity WHERE run_id=? AND vendor_id=? AND slot_id=?",
                     (run_id, vendor_id, slot["id"]),
@@ -309,7 +351,8 @@ class Market:
             ) if k in d} for d in vendor.get("discounts", [])]
             return {"vendor": self._vendor_public(vendor), "products": products,
                     "delivery_slots": slots, "discounts": discounts,
-                    "currency": snapshot["currency"], "simulated": True}
+                    "currency": snapshot["currency"], "simulated": True,
+                    "tax_treatment": snapshot.get("tax_treatment", "unknown/not_modeled")}
 
     def inquire(self, run_id: str, vendor_id: str, buyer_id: str, message: str,
                 channel: str = "website", request_id: str | None = None) -> dict:
@@ -324,6 +367,7 @@ class Market:
             lines.append(f"{product['id']}: {product['name']}; {_json(product['specifications'])}; "
                          f"USD {product['list_price']} per {product['unit']}; "
                          f"stock {product['stock']}; minimum {product['minimum_quantity']}."
+                         f" Each selling unit covers {product['units_per_sale_unit']} {product['requirement_unit']}."
                          + (" Buyer approval required for substitution." if product["substitution_for"] else ""))
         for slot in catalog["delivery_slots"]:
             lines.append(f"Delivery {slot['id']}: {slot['label']}, {slot['days']} days, USD {slot['fee']} fee.")
@@ -364,6 +408,7 @@ class Market:
             if not isinstance(raw_lines, list) or not 1 <= len(raw_lines) <= 100:
                 raise MarketError("invalid_input", "Specify between 1 and 100 product lines.")
             product_map = {p["id"]: p for p in vendor["products"]}
+            requirements = {r["id"]: r for r in snapshot["requirements"]}
             used = set()
             lines = []
             subtotal = Decimal(0)
@@ -405,6 +450,10 @@ class Market:
                 lines.append({"product_id": product_id, "name": product["name"], "quantity": quantity,
                               "unit": product["unit"], "unit_price": _amount(unit_price),
                               "line_total": _amount(line_total), "requirement_id": product["requirement_id"],
+                              "units_per_sale_unit": _decimal_text(_coverage(product.get("units_per_sale_unit", "1"))),
+                              "covered_quantity": _decimal_text(quantity * _coverage(product.get("units_per_sale_unit", "1"))),
+                              "requirement_unit": requirements[product["requirement_id"]]["unit"],
+                              "variant": product.get("variant"),
                               "substitution_for": product.get("substitution_for")})
             slot_id = proposal.get("delivery_slot")
             slot = next((s for s in vendor["slots"] if s["id"] == slot_id), None)
@@ -473,6 +522,7 @@ class Market:
                      "lines": lines, "subtotal": _amount(subtotal), "discounts": discounts,
                      "fees": [{"name": "delivery", "amount": _amount(fee)}], "total": _amount(total),
                      "currency": snapshot["currency"], "delivery_slot": slot_id,
+                     "tax_treatment": snapshot.get("tax_treatment", "unknown/not_modeled"),
                      "delivery": {"slot_id": slot_id, "label": slot["label"], "days": slot["days"]},
                      "created_at": now.isoformat(),
                      "expires_at": (now + timedelta(seconds=snapshot["quote_ttl_seconds"])).isoformat(),
@@ -576,6 +626,7 @@ class Market:
             offer["draft_order"] = {"id": commitment_id, "quote_id": quote_id, "revision": offer["revision"],
                                     "supplier_id": offer["vendor_id"], "lines": offer["lines"],
                                     "total": offer["total"], "currency": offer["currency"],
+                                    "tax_treatment": offer.get("tax_treatment", "unknown/not_modeled"),
                                     "delivery": offer["delivery"], "status": "simulated_commitment"}
             offer["tasks"] = [{"id": commitment_id + "_fulfill", "title": "Prepare simulated material package",
                                "quote_id": quote_id, "status": "pending", "simulated": True}]
@@ -641,7 +692,8 @@ class Market:
         if run["buyer_id"] != buyer_id:
             raise MarketError("not_found", "Run not found.", 404)
         failures = []
-        totals = {r["id"]: 0 for r in run["requirements"]}
+        totals = {r["id"]: Decimal(0) for r in run["requirements"]}
+        variant_totals: dict[tuple[str, str], Decimal] = {}
         cost = Decimal(0)
         seen = set()
         stock_needed: dict[tuple[str, str], int] = {}
@@ -665,7 +717,11 @@ class Market:
                     failures.append("late_delivery")
                 cost += _money(offer["total"])
                 for line in offer["lines"]:
-                    totals[line["requirement_id"]] += line["quantity"]
+                    covered = _coverage(line.get("covered_quantity", line["quantity"]))
+                    totals[line["requirement_id"]] += covered
+                    if line.get("variant"):
+                        variant_key = (line["requirement_id"], line["variant"])
+                        variant_totals[variant_key] = variant_totals.get(variant_key, Decimal(0)) + covered
                     if offer["status"] == "issued":
                         stock_key = (offer["vendor_id"], line["product_id"])
                         stock_needed[stock_key] = stock_needed.get(stock_key, 0) + line["quantity"]
@@ -693,9 +749,22 @@ class Market:
             for requirement in run["requirements"]:
                 if totals[requirement["id"]] < requirement["quantity"]:
                     failures.append("missing_quantity:" + requirement["id"])
+                for variant, required in requirement.get("required_variants", {}).items():
+                    if variant_totals.get((requirement["id"], variant), Decimal(0)) < _coverage(required):
+                        failures.append("missing_variant:" + requirement["id"] + ":" + variant)
         result = {"run_id": run_id, "quote_ids": quote_ids, "valid": not failures,
+                  "validation_scope": "commercial_terms_and_material_coverage",
+                  "contractor_clarifications": [dict(c, requirement_id=r["id"])
+                      for r in run["requirements"] for c in r.get("unresolved_clarifications", [])
+                      if c.get("status") == "unresolved"],
                   "failures": sorted(set(failures)), "delivered_cost": _amount(cost), "currency": "USD",
-                  "quantities": totals, "scored_at": _now().isoformat(), "simulated": True}
+                  "quantities": {key: int(value) if value == value.to_integral_value() else _decimal_text(value)
+                                 for key, value in totals.items()},
+                  "variant_quantities": {r["id"]: {variant: _decimal_text(variant_totals.get((r["id"], variant), Decimal(0)))
+                                                   for variant in r["required_variants"]}
+                                         for r in run["requirements"] if r.get("required_variants")},
+                  "tax_treatment": run["tax_treatment"],
+                  "scored_at": _now().isoformat(), "simulated": True}
         with self._db(True) as db:
             self._event(db, run_id, "plan_scored", result)
         return result

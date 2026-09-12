@@ -1,0 +1,2737 @@
+{
+  "id": "proposed-house-25",
+  "version": "house-25-proposal-1",
+  "label": "Proposed 25-line synthetic supplier world — buyer adoption pending",
+  "simulated": true,
+  "adoption_status": "proposal_pending_buyer_agreement",
+  "currency": "USD",
+  "tax_treatment": "all_fixture_taxes_included",
+  "quote_ttl_seconds": 3600,
+  "delivery_zone": "94103",
+  "required_delivery_date": "2026-09-18",
+  "delivery_date_basis": "scenario_start_2026-09-12; absolute dates are synthetic scenario constraints",
+  "source_message": "Can you price this lot for the house and put together a delivered buying plan? Need it in the 94103 delivery zone by Friday, Sept 18. Splitting suppliers is fine. Brands are open where they meet what I've written. Round up to full sale packs where needed and show me the excess. The coverage amounts already include my allowance, so don't add another waste percentage.\n\nFraming and sheet goods:\n1. 200 of the 2x4x8 KD SPF studs, No. 2 — full 8-foot lengths.\n2. 60 lengths of 2x6x10 KD SPF, No. 2.\n3. 40 sheets of 7/16 OSB, 4x8, rated sheathing, Exposure 1.\n4. 20 sheets 23/32 tongue-and-groove plywood subfloor, 4x8, Exposure 1.\n\nRoof and weatherproofing:\n5. Architectural asphalt shingles, charcoal — 600 sq ft. New roof section, no existing shingles to match; send me the color sample with the quote.\n6. Synthetic roofing underlayment for that shingle roof — enough for 600 sq ft, using the product's stated installed coverage.\n7. Two rolls housewrap, 9 ft x 100 ft, for the exterior walls; product needs to be sold as a water-resistive barrier.\n8. Three rolls of housewrap seam tape, 2 inches x 55 yards, approved by the wrap maker for the wrap you quote.\n9. Four rolls self-adhered window flashing tape, 4 inches x 75 feet; get the product information confirming it works with the quoted wrap and vinyl windows.\n\nInsulation and wall finish:\n10. R-13 fiberglass batts, 15-inch wide — enough for 600 sq ft of walls.\n11. 60 sheets regular half-inch drywall, 4x8.\n12. 12 sheets half-inch cement backer board, 3x5, sold for interior wall tile backing.\n13. Four 4.5-gal pails premixed all-purpose drywall joint compound.\n14. Two 500-ft rolls paper drywall joint tape.\n15. Two 5-lb boxes of #6 x 1-1/4 coarse-thread drywall screws, black phosphate.\n\nPlumbing and electrical rough-in:\n16. Half-inch PEX for the water lines — one 100-ft coil red and one blue. Has to work with our fittings.\n17. Eight 10-ft lengths of 2-inch Schedule 40 PVC DWV pipe, plain ends.\n18. One 250-ft roll 12/2 NM-B copper cable with ground.\n19. 20 single-gang plastic new-work electrical boxes, 22 cu in, nail-on.\n\nDoors and windows:\n20. Three primed smooth flush hollow-core interior door slabs, 30 x 80 x 1-3/8 inches, no bores or hinge mortises; we're doing that on site.\n21. Two fixed white vinyl windows, actual unit size 24 x 36 inches, nail fin, double-pane clear insulated glass. Include the product performance sheet.\n\nInterior finish:\n22. 160 linear ft of primed MDF baseboard, square edge, 3-1/4 inches high x 9/16 thick. Stock lengths of 8 ft or longer are fine; show the lengths and total.\n23. 200 sq ft click-lock vinyl plank flooring, 6 mm overall thickness, 20 mil wear layer, light oak look. No existing floor to match; send the finish sample.\n24. 15 gallons interior wall paint, water-based, eggshell, factory white. Either 1-gal cans or 5-gal pails works.\n25. Two gallons water-based interior trim enamel, semi-gloss, factory white.\n\nGet the quotes first and flag anything essential I've missed. If changing a stated product spec opens up a worthwhile option, show me the actual product, the difference, and the price and delivery consequences before changing the plan. Same if a different delivery date materially changes the price. This is a buying recommendation; don't place orders.\n",
+  "source_path": "examples/procurement/contractor-house-request.txt",
+  "scenario_notes": [
+    "All products, product evidence, prices, tax treatment and business constraints are invented demo data.",
+    "Full sale packs only; source quantities already include the contractor allowance.",
+    "Facing and existing PEX fitting identity remain unresolved; a complete catalog is not a complete eligible plan.",
+    "No real purchase, code compliance, engineering suitability or manufacturer approval is implied."
+  ],
+  "requirements": [
+    {
+      "id": "house-01",
+      "name": "Full-length KD SPF studs",
+      "unit": "each",
+      "quantity": 200,
+      "source_line": 1,
+      "source_text": "1. 200 of the 2x4x8 KD SPF studs, No. 2 — full 8-foot lengths.",
+      "source_file_line": 4,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L4",
+      "specifications": {
+        "nominal_size": "2x4",
+        "length_ft": 8,
+        "full_length": true,
+        "species_group": "SPF",
+        "grade": "No. 2",
+        "drying": "KD"
+      }
+    },
+    {
+      "id": "house-02",
+      "name": "KD SPF long framing",
+      "unit": "each",
+      "quantity": 60,
+      "source_line": 2,
+      "source_text": "2. 60 lengths of 2x6x10 KD SPF, No. 2.",
+      "source_file_line": 5,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L5",
+      "specifications": {
+        "nominal_size": "2x6",
+        "length_ft": 10,
+        "species_group": "SPF",
+        "grade": "No. 2",
+        "drying": "KD"
+      }
+    },
+    {
+      "id": "house-03",
+      "name": "Rated OSB sheathing",
+      "unit": "sheet",
+      "quantity": 40,
+      "source_line": 3,
+      "source_text": "3. 40 sheets of 7/16 OSB, 4x8, rated sheathing, Exposure 1.",
+      "source_file_line": 6,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L6",
+      "specifications": {
+        "material": "OSB",
+        "thickness_in": "7/16",
+        "dimensions_ft": "4x8",
+        "designation": "rated sheathing",
+        "exposure": "Exposure 1"
+      }
+    },
+    {
+      "id": "house-04",
+      "name": "T&G plywood subfloor",
+      "unit": "sheet",
+      "quantity": 20,
+      "source_line": 4,
+      "source_text": "4. 20 sheets 23/32 tongue-and-groove plywood subfloor, 4x8, Exposure 1.",
+      "source_file_line": 7,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L7",
+      "specifications": {
+        "material": "plywood",
+        "thickness_in": "23/32",
+        "dimensions_ft": "4x8",
+        "edge": "tongue-and-groove",
+        "use": "subfloor",
+        "exposure": "Exposure 1"
+      }
+    },
+    {
+      "id": "house-05",
+      "name": "Charcoal architectural shingles",
+      "unit": "sq_ft",
+      "quantity": 600,
+      "source_line": 5,
+      "source_text": "5. Architectural asphalt shingles, charcoal — 600 sq ft. New roof section, no existing shingles to match; send me the color sample with the quote.",
+      "source_file_line": 10,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L10",
+      "specifications": {
+        "material": "asphalt",
+        "type": "architectural shingles",
+        "color": "charcoal"
+      }
+    },
+    {
+      "id": "house-06",
+      "name": "Synthetic roofing underlayment",
+      "unit": "sq_ft",
+      "quantity": 600,
+      "source_line": 6,
+      "source_text": "6. Synthetic roofing underlayment for that shingle roof — enough for 600 sq ft, using the product's stated installed coverage.",
+      "source_file_line": 11,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L11",
+      "specifications": {
+        "material": "synthetic",
+        "use": "under architectural asphalt shingles"
+      }
+    },
+    {
+      "id": "house-07",
+      "name": "WRB housewrap 9x100",
+      "unit": "roll",
+      "quantity": 2,
+      "source_line": 7,
+      "source_text": "7. Two rolls housewrap, 9 ft x 100 ft, for the exterior walls; product needs to be sold as a water-resistive barrier.",
+      "source_file_line": 12,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L12",
+      "specifications": {
+        "purpose": "water-resistive barrier",
+        "width_ft": 9,
+        "length_ft": 100
+      }
+    },
+    {
+      "id": "house-08",
+      "name": "Wrap-maker seam tape",
+      "unit": "roll",
+      "quantity": 3,
+      "source_line": 8,
+      "source_text": "8. Three rolls of housewrap seam tape, 2 inches x 55 yards, approved by the wrap maker for the wrap you quote.",
+      "source_file_line": 13,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L13",
+      "specifications": {
+        "material": "housewrap seam tape",
+        "width_in": 2,
+        "length_yd": 55
+      }
+    },
+    {
+      "id": "house-09",
+      "name": "Self-adhered flashing tape",
+      "unit": "roll",
+      "quantity": 4,
+      "source_line": 9,
+      "source_text": "9. Four rolls self-adhered window flashing tape, 4 inches x 75 feet; get the product information confirming it works with the quoted wrap and vinyl windows.",
+      "source_file_line": 14,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L14",
+      "specifications": {
+        "type": "self-adhered window flashing tape",
+        "width_in": 4,
+        "length_ft": 75,
+        "window_frame_material": "vinyl"
+      }
+    },
+    {
+      "id": "house-10",
+      "name": "R13 fiberglass wall batts",
+      "unit": "sq_ft",
+      "quantity": 600,
+      "source_line": 10,
+      "source_text": "10. R-13 fiberglass batts, 15-inch wide — enough for 600 sq ft of walls.",
+      "source_file_line": 17,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L17",
+      "specifications": {
+        "material": "fiberglass",
+        "r_value": "R-13",
+        "width_in": 15
+      },
+      "unresolved_clarifications": [
+        {
+          "key": "facing",
+          "owner": "contractor",
+          "required_before_recommendation": true,
+          "question": "Which insulation facing is required?",
+          "status": "unresolved",
+          "answer": null
+        }
+      ]
+    },
+    {
+      "id": "house-11",
+      "name": "Regular half-inch drywall",
+      "unit": "sheet",
+      "quantity": 60,
+      "source_line": 11,
+      "source_text": "11. 60 sheets regular half-inch drywall, 4x8.",
+      "source_file_line": 18,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L18",
+      "specifications": {
+        "type": "regular drywall",
+        "thickness_in": "1/2",
+        "dimensions_ft": "4x8"
+      }
+    },
+    {
+      "id": "house-12",
+      "name": "Interior wall cement backer",
+      "unit": "board",
+      "quantity": 12,
+      "source_line": 12,
+      "source_text": "12. 12 sheets half-inch cement backer board, 3x5, sold for interior wall tile backing.",
+      "source_file_line": 19,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L19",
+      "specifications": {
+        "material": "cement backer board",
+        "thickness_in": "1/2",
+        "dimensions_ft": "3x5",
+        "manufacturer_stated_use": "interior wall tile backing"
+      }
+    },
+    {
+      "id": "house-13",
+      "name": "Premixed all-purpose joint compound",
+      "unit": "us_gal",
+      "quantity": 18,
+      "source_line": 13,
+      "source_text": "13. Four 4.5-gal pails premixed all-purpose drywall joint compound.",
+      "source_file_line": 20,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L20",
+      "specifications": {
+        "type": "premixed all-purpose drywall joint compound"
+      }
+    },
+    {
+      "id": "house-14",
+      "name": "Paper drywall joint tape",
+      "unit": "linear_ft",
+      "quantity": 1000,
+      "source_line": 14,
+      "source_text": "14. Two 500-ft rolls paper drywall joint tape.",
+      "source_file_line": 21,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L21",
+      "specifications": {
+        "material": "paper",
+        "use": "drywall joint tape",
+        "roll_length_ft": 500
+      }
+    },
+    {
+      "id": "house-15",
+      "name": "Coarse-thread drywall screws",
+      "unit": "lb",
+      "quantity": 10,
+      "source_line": 15,
+      "source_text": "15. Two 5-lb boxes of #6 x 1-1/4 coarse-thread drywall screws, black phosphate.",
+      "source_file_line": 22,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L22",
+      "specifications": {
+        "diameter": "#6",
+        "length_in": "1-1/4",
+        "thread": "coarse",
+        "coating": "black phosphate"
+      }
+    },
+    {
+      "id": "house-16",
+      "name": "Half-inch PEX water coil",
+      "unit": "linear_ft",
+      "quantity": 200,
+      "source_line": 16,
+      "source_text": "16. Half-inch PEX for the water lines — one 100-ft coil red and one blue. Has to work with our fittings.",
+      "source_file_line": 25,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L25",
+      "specifications": {
+        "nominal_size_in": "1/2",
+        "material": "PEX",
+        "use": "water lines",
+        "coil_length_ft": 100
+      },
+      "unresolved_clarifications": [
+        {
+          "key": "fitting_system",
+          "owner": "contractor",
+          "required_before_recommendation": true,
+          "question": "What fittings must the PEX connect to?",
+          "status": "unresolved",
+          "answer": null
+        }
+      ],
+      "required_variants": {
+        "red": 100,
+        "blue": 100
+      }
+    },
+    {
+      "id": "house-17",
+      "name": "Plain-end PVC DWV pipe",
+      "unit": "each",
+      "quantity": 8,
+      "source_line": 17,
+      "source_text": "17. Eight 10-ft lengths of 2-inch Schedule 40 PVC DWV pipe, plain ends.",
+      "source_file_line": 26,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L26",
+      "specifications": {
+        "material": "PVC",
+        "designation": "Schedule 40 DWV",
+        "diameter_in": 2,
+        "length_ft": 10,
+        "ends": "plain"
+      }
+    },
+    {
+      "id": "house-18",
+      "name": "12/2 copper NM-B cable",
+      "unit": "roll",
+      "quantity": 1,
+      "source_line": 18,
+      "source_text": "18. One 250-ft roll 12/2 NM-B copper cable with ground.",
+      "source_file_line": 27,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L27",
+      "specifications": {
+        "designation": "12/2 NM-B",
+        "conductor_material": "copper",
+        "with_ground": true,
+        "roll_length_ft": 250
+      }
+    },
+    {
+      "id": "house-19",
+      "name": "22-cu-in nail-on electrical box",
+      "unit": "each",
+      "quantity": 20,
+      "source_line": 19,
+      "source_text": "19. 20 single-gang plastic new-work electrical boxes, 22 cu in, nail-on.",
+      "source_file_line": 28,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L28",
+      "specifications": {
+        "gangs": 1,
+        "material": "plastic",
+        "work_type": "new-work",
+        "mounting": "nail-on",
+        "volume_cu_in": 22
+      }
+    },
+    {
+      "id": "house-20",
+      "name": "Unprepared primed interior door slab",
+      "unit": "each",
+      "quantity": 3,
+      "source_line": 20,
+      "source_text": "20. Three primed smooth flush hollow-core interior door slabs, 30 x 80 x 1-3/8 inches, no bores or hinge mortises; we're doing that on site.",
+      "source_file_line": 31,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L31",
+      "specifications": {
+        "type": "slab",
+        "core": "hollow",
+        "surface": "smooth flush",
+        "primed": true,
+        "width_in": 30,
+        "height_in": 80,
+        "thickness_in": "1-3/8",
+        "bores": false,
+        "hinge_mortises": false
+      }
+    },
+    {
+      "id": "house-21",
+      "name": "Fixed white vinyl window",
+      "unit": "each",
+      "quantity": 2,
+      "source_line": 21,
+      "source_text": "21. Two fixed white vinyl windows, actual unit size 24 x 36 inches, nail fin, double-pane clear insulated glass. Include the product performance sheet.",
+      "source_file_line": 32,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L32",
+      "specifications": {
+        "operation": "fixed",
+        "frame_material": "vinyl",
+        "frame_color": "white",
+        "actual_unit_width_in": 24,
+        "actual_unit_height_in": 36,
+        "nail_fin": true,
+        "glazing": "double-pane clear insulated glass"
+      }
+    },
+    {
+      "id": "house-22",
+      "name": "Square-edge primed MDF baseboard",
+      "unit": "linear_ft",
+      "quantity": 160,
+      "source_line": 22,
+      "source_text": "22. 160 linear ft of primed MDF baseboard, square edge, 3-1/4 inches high x 9/16 thick. Stock lengths of 8 ft or longer are fine; show the lengths and total.",
+      "source_file_line": 35,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L35",
+      "specifications": {
+        "material": "MDF",
+        "primed": true,
+        "profile": "square edge",
+        "height_in": "3-1/4",
+        "thickness_in": "9/16"
+      }
+    },
+    {
+      "id": "house-23",
+      "name": "Light-oak click-lock vinyl plank",
+      "unit": "sq_ft",
+      "quantity": 200,
+      "source_line": 23,
+      "source_text": "23. 200 sq ft click-lock vinyl plank flooring, 6 mm overall thickness, 20 mil wear layer, light oak look. No existing floor to match; send the finish sample.",
+      "source_file_line": 36,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L36",
+      "specifications": {
+        "material": "vinyl plank",
+        "joint": "click-lock",
+        "overall_thickness_mm": 6,
+        "wear_layer_mil": 20,
+        "finish": "light oak look"
+      }
+    },
+    {
+      "id": "house-24",
+      "name": "Factory-white eggshell wall paint",
+      "unit": "us_gal",
+      "quantity": 15,
+      "source_line": 24,
+      "source_text": "24. 15 gallons interior wall paint, water-based, eggshell, factory white. Either 1-gal cans or 5-gal pails works.",
+      "source_file_line": 37,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L37",
+      "specifications": {
+        "use": "interior wall",
+        "base": "water-based",
+        "sheen": "eggshell",
+        "color": "factory white"
+      }
+    },
+    {
+      "id": "house-25",
+      "name": "Factory-white semi-gloss trim enamel",
+      "unit": "us_gal",
+      "quantity": 2,
+      "source_line": 25,
+      "source_text": "25. Two gallons water-based interior trim enamel, semi-gloss, factory white.",
+      "source_file_line": 38,
+      "source_ref": "examples/procurement/contractor-house-request.txt#L38",
+      "specifications": {
+        "use": "interior trim enamel",
+        "base": "water-based",
+        "sheen": "semi-gloss",
+        "color": "factory white"
+      }
+    }
+  ],
+  "vendors": [
+    {
+      "id": "general",
+      "name": "General Building Supply",
+      "channel": "website",
+      "description": "Offer fixed published packages, explain product fit and full sale packs.",
+      "objective": "Offer fixed published packages, explain product fit and full sale packs.",
+      "products": [
+        {
+          "id": "general-house-01",
+          "name": "Full-length KD SPF studs",
+          "requirement_id": "house-01",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 200,
+          "list_price": "4.61",
+          "minimum_quantity": 1,
+          "specifications": {
+            "nominal_size": "2x4",
+            "length_ft": 8,
+            "full_length": true,
+            "species_group": "SPF",
+            "grade": "No. 2",
+            "drying": "KD"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-01-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "2.90"
+          }
+        },
+        {
+          "id": "general-house-02",
+          "name": "KD SPF long framing",
+          "requirement_id": "house-02",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 60,
+          "list_price": "11.18",
+          "minimum_quantity": 1,
+          "specifications": {
+            "nominal_size": "2x6",
+            "length_ft": 10,
+            "species_group": "SPF",
+            "grade": "No. 2",
+            "drying": "KD"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-02-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "7.04"
+          }
+        },
+        {
+          "id": "general-house-03",
+          "name": "Rated OSB sheathing",
+          "requirement_id": "house-03",
+          "requirement_unit": "sheet",
+          "unit": "sheet",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 40,
+          "list_price": "18.08",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "OSB",
+            "thickness_in": "7/16",
+            "dimensions_ft": "4x8",
+            "designation": "rated sheathing",
+            "exposure": "Exposure 1"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-03-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "11.39"
+          }
+        },
+        {
+          "id": "general-house-04",
+          "name": "T&G plywood subfloor",
+          "requirement_id": "house-04",
+          "requirement_unit": "sheet",
+          "unit": "sheet",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 60,
+          "list_price": "46.50",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "plywood",
+            "thickness_in": "23/32",
+            "dimensions_ft": "4x8",
+            "edge": "tongue-and-groove",
+            "use": "subfloor",
+            "exposure": "Exposure 1"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-04-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "29.30"
+          }
+        },
+        {
+          "id": "general-house-05",
+          "name": "Charcoal architectural shingles",
+          "requirement_id": "house-05",
+          "requirement_unit": "sq_ft",
+          "unit": "bundle",
+          "units_per_sale_unit": "33.33",
+          "pack_size": 1,
+          "stock": 57,
+          "list_price": "39.36",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "asphalt",
+            "type": "architectural shingles",
+            "color": "charcoal",
+            "bundle_coverage_sq_ft": "33.33",
+            "sample_ref": "fixture:charcoal-sample"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-05-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "24.80"
+          }
+        },
+        {
+          "id": "general-house-06",
+          "name": "Synthetic roofing underlayment",
+          "requirement_id": "house-06",
+          "requirement_unit": "sq_ft",
+          "unit": "roll",
+          "units_per_sale_unit": "500",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "81.12",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "synthetic",
+            "installed_coverage_sq_ft": "500",
+            "use": "under architectural asphalt shingles",
+            "use_evidence_ref": "fixture:roof-system-data",
+            "installed_coverage_conditions": "Fixture coverage already accounts for the stated lap pattern; no extra waste factor."
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-06-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "51.11"
+          },
+          "related_requirements": [
+            "house-05"
+          ]
+        },
+        {
+          "id": "general-house-07",
+          "name": "WRB housewrap 9x100",
+          "requirement_id": "house-07",
+          "requirement_unit": "roll",
+          "unit": "roll",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "113.12",
+          "minimum_quantity": 1,
+          "specifications": {
+            "purpose": "water-resistive barrier",
+            "width_ft": 9,
+            "length_ft": 100,
+            "maker": "DemoWrap",
+            "product_family": "DemoWrap WRB"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-07-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "71.27"
+          }
+        },
+        {
+          "id": "general-house-08",
+          "name": "Wrap-maker seam tape",
+          "requirement_id": "house-08",
+          "requirement_unit": "roll",
+          "unit": "roll",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "14.50",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "housewrap seam tape",
+            "width_in": 2,
+            "length_yd": 55,
+            "approved_wrap_family": "DemoWrap WRB",
+            "approval_evidence_ref": "fixture:demowrap-seam-tape-data"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-08-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "9.14"
+          },
+          "related_requirements": [
+            "house-07"
+          ]
+        },
+        {
+          "id": "general-house-09",
+          "name": "Self-adhered flashing tape",
+          "requirement_id": "house-09",
+          "requirement_unit": "roll",
+          "unit": "roll",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "23.04",
+          "minimum_quantity": 1,
+          "specifications": {
+            "type": "self-adhered window flashing tape",
+            "width_in": 4,
+            "length_ft": 75,
+            "compatible_wrap_family": "DemoWrap WRB",
+            "window_frame_material": "vinyl",
+            "compatibility_evidence_ref": "fixture:flashing-wrap-vinyl-data",
+            "installation_conditions": "Synthetic product sheet: clean dry substrates; fixture temperature range 40–100 F. This is not actual manufacturer evidence."
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-09-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "14.52"
+          },
+          "related_requirements": [
+            "house-07",
+            "house-21"
+          ]
+        },
+        {
+          "id": "general-house-10",
+          "name": "R13 fiberglass wall batts",
+          "requirement_id": "house-10",
+          "requirement_unit": "sq_ft",
+          "unit": "bag",
+          "units_per_sale_unit": "40",
+          "pack_size": 1,
+          "stock": 45,
+          "list_price": "33.28",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "fiberglass",
+            "r_value": "R-13",
+            "width_in": 15,
+            "facing": "unfaced",
+            "coverage_sq_ft_per_bag": "40"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-10-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "20.97"
+          },
+          "unresolved_clarifications": [
+            {
+              "key": "facing",
+              "owner": "contractor",
+              "required_before_recommendation": true,
+              "question": "Which insulation facing is required?",
+              "status": "unresolved",
+              "answer": null
+            }
+          ],
+          "eligibility": "needs_contractor_clarification"
+        },
+        {
+          "id": "general-house-11",
+          "name": "Regular half-inch drywall",
+          "requirement_id": "house-11",
+          "requirement_unit": "sheet",
+          "unit": "sheet",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 180,
+          "list_price": "14.90",
+          "minimum_quantity": 1,
+          "specifications": {
+            "type": "regular drywall",
+            "thickness_in": "1/2",
+            "dimensions_ft": "4x8"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-11-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "9.39"
+          }
+        },
+        {
+          "id": "general-house-12",
+          "name": "Interior wall cement backer",
+          "requirement_id": "house-12",
+          "requirement_unit": "board",
+          "unit": "board",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 36,
+          "list_price": "16.90",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "cement backer board",
+            "thickness_in": "1/2",
+            "dimensions_ft": "3x5",
+            "manufacturer_stated_use": "interior wall tile backing",
+            "use_evidence_ref": "fixture:cement-backer-data"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-12-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "10.65"
+          }
+        },
+        {
+          "id": "general-house-13",
+          "name": "Premixed all-purpose joint compound",
+          "requirement_id": "house-13",
+          "requirement_unit": "us_gal",
+          "unit": "pail",
+          "units_per_sale_unit": "4.5",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "20.16",
+          "minimum_quantity": 1,
+          "specifications": {
+            "type": "premixed all-purpose drywall joint compound",
+            "container_us_gal": "4.5"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-13-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "12.70"
+          }
+        },
+        {
+          "id": "general-house-14",
+          "name": "Paper drywall joint tape",
+          "requirement_id": "house-14",
+          "requirement_unit": "linear_ft",
+          "unit": "roll",
+          "units_per_sale_unit": "500",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "8.84",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "paper",
+            "use": "drywall joint tape",
+            "roll_length_ft": 500
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-14-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "5.57"
+          }
+        },
+        {
+          "id": "general-house-15",
+          "name": "Coarse-thread drywall screws",
+          "requirement_id": "house-15",
+          "requirement_unit": "lb",
+          "unit": "box",
+          "units_per_sale_unit": "5",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "19.95",
+          "minimum_quantity": 1,
+          "specifications": {
+            "diameter": "#6",
+            "length_in": "1-1/4",
+            "thread": "coarse",
+            "coating": "black phosphate",
+            "net_box_weight_lb": 5
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-15-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "12.57"
+          }
+        },
+        {
+          "id": "general-house-16-red",
+          "name": "Half-inch PEX water coil — red",
+          "requirement_id": "house-16",
+          "requirement_unit": "linear_ft",
+          "unit": "coil",
+          "units_per_sale_unit": "100",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "49.00",
+          "minimum_quantity": 1,
+          "specifications": {
+            "nominal_size_in": "1/2",
+            "material": "PEX",
+            "use": "water lines",
+            "coil_length_ft": 100,
+            "connection_system": "DemoPEX expansion fittings",
+            "compatibility_evidence_ref": "fixture:demopex-fitting-data",
+            "color": "red"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-16-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "30.87"
+          },
+          "variant": "red",
+          "unresolved_clarifications": [
+            {
+              "key": "fitting_system",
+              "owner": "contractor",
+              "required_before_recommendation": true,
+              "question": "What fittings must the PEX connect to?",
+              "status": "unresolved",
+              "answer": null
+            }
+          ],
+          "eligibility": "needs_contractor_clarification"
+        },
+        {
+          "id": "general-house-16-blue",
+          "name": "Half-inch PEX water coil — blue",
+          "requirement_id": "house-16",
+          "requirement_unit": "linear_ft",
+          "unit": "coil",
+          "units_per_sale_unit": "100",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "49.00",
+          "minimum_quantity": 1,
+          "specifications": {
+            "nominal_size_in": "1/2",
+            "material": "PEX",
+            "use": "water lines",
+            "coil_length_ft": 100,
+            "connection_system": "DemoPEX expansion fittings",
+            "compatibility_evidence_ref": "fixture:demopex-fitting-data",
+            "color": "blue"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-16-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "30.87"
+          },
+          "variant": "blue",
+          "unresolved_clarifications": [
+            {
+              "key": "fitting_system",
+              "owner": "contractor",
+              "required_before_recommendation": true,
+              "question": "What fittings must the PEX connect to?",
+              "status": "unresolved",
+              "answer": null
+            }
+          ],
+          "eligibility": "needs_contractor_clarification"
+        },
+        {
+          "id": "general-house-17",
+          "name": "Plain-end PVC DWV pipe",
+          "requirement_id": "house-17",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 24,
+          "list_price": "17.28",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "PVC",
+            "designation": "Schedule 40 DWV",
+            "diameter_in": 2,
+            "length_ft": 10,
+            "ends": "plain"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-17-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "10.89"
+          }
+        },
+        {
+          "id": "general-house-18",
+          "name": "12/2 copper NM-B cable",
+          "requirement_id": "house-18",
+          "requirement_unit": "roll",
+          "unit": "roll",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "137.28",
+          "minimum_quantity": 1,
+          "specifications": {
+            "designation": "12/2 NM-B",
+            "conductor_material": "copper",
+            "with_ground": true,
+            "roll_length_ft": 250
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-18-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "86.49"
+          }
+        },
+        {
+          "id": "general-house-19",
+          "name": "22-cu-in nail-on electrical box",
+          "requirement_id": "house-19",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 60,
+          "list_price": "2.12",
+          "minimum_quantity": 1,
+          "specifications": {
+            "gangs": 1,
+            "material": "plastic",
+            "work_type": "new-work",
+            "mounting": "nail-on",
+            "volume_cu_in": 22
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-19-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "1.34"
+          }
+        },
+        {
+          "id": "general-house-20",
+          "name": "Unprepared primed interior door slab",
+          "requirement_id": "house-20",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "76.00",
+          "minimum_quantity": 1,
+          "specifications": {
+            "type": "slab",
+            "core": "hollow",
+            "surface": "smooth flush",
+            "primed": true,
+            "width_in": 30,
+            "height_in": 80,
+            "thickness_in": "1-3/8",
+            "bores": false,
+            "hinge_mortises": false
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-20-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "47.88"
+          }
+        },
+        {
+          "id": "general-house-21",
+          "name": "Fixed white vinyl window",
+          "requirement_id": "house-21",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "177.60",
+          "minimum_quantity": 1,
+          "specifications": {
+            "operation": "fixed",
+            "frame_material": "vinyl",
+            "frame_color": "white",
+            "actual_unit_width_in": 24,
+            "actual_unit_height_in": 36,
+            "nail_fin": true,
+            "glazing": "double-pane clear insulated glass",
+            "performance_sheet_ref": "fixture:fixed-window-performance"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-21-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "111.89"
+          }
+        },
+        {
+          "id": "general-house-22",
+          "name": "Square-edge primed MDF baseboard",
+          "requirement_id": "house-22",
+          "requirement_unit": "linear_ft",
+          "unit": "length",
+          "units_per_sale_unit": "12",
+          "pack_size": 1,
+          "stock": 42,
+          "list_price": "13.10",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "MDF",
+            "primed": true,
+            "profile": "square edge",
+            "height_in": "3-1/4",
+            "thickness_in": "9/16",
+            "stock_length_ft": 12
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-22-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "8.25"
+          }
+        },
+        {
+          "id": "general-house-23",
+          "name": "Light-oak click-lock vinyl plank",
+          "requirement_id": "house-23",
+          "requirement_unit": "sq_ft",
+          "unit": "carton",
+          "units_per_sale_unit": "23.5",
+          "pack_size": 1,
+          "stock": 27,
+          "list_price": "61.71",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "vinyl plank",
+            "joint": "click-lock",
+            "overall_thickness_mm": 6,
+            "wear_layer_mil": 20,
+            "finish": "light oak look",
+            "carton_coverage_sq_ft": "23.5",
+            "sample_ref": "fixture:light-oak-finish-sample"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-23-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "38.88"
+          }
+        },
+        {
+          "id": "general-house-24",
+          "name": "Factory-white eggshell wall paint",
+          "requirement_id": "house-24",
+          "requirement_unit": "us_gal",
+          "unit": "pail",
+          "units_per_sale_unit": "5",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "112.00",
+          "minimum_quantity": 1,
+          "specifications": {
+            "use": "interior wall",
+            "base": "water-based",
+            "sheen": "eggshell",
+            "color": "factory white",
+            "container_us_gal": 5
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-24-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "70.56"
+          }
+        },
+        {
+          "id": "general-house-25",
+          "name": "Factory-white semi-gloss trim enamel",
+          "requirement_id": "house-25",
+          "requirement_unit": "us_gal",
+          "unit": "can",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "29.76",
+          "minimum_quantity": 1,
+          "specifications": {
+            "use": "interior trim enamel",
+            "base": "water-based",
+            "sheen": "semi-gloss",
+            "color": "factory white",
+            "container_us_gal": 1
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:general-house-25-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "18.75"
+          }
+        }
+      ],
+      "slots": [
+        {
+          "id": "standard",
+          "label": "94103 zone estimate — delivered by Sept 18",
+          "days": 6,
+          "delivery_date": "2026-09-18",
+          "fee": "68.00",
+          "capacity": 2500,
+          "delivery_zone": "94103",
+          "quote_basis": "synthetic_zone_estimate"
+        }
+      ],
+      "discounts": [],
+      "private": {
+        "max_discount_percent": "0",
+        "min_margin_percent": "15",
+        "delivery_cost": "38"
+      }
+    },
+    {
+      "id": "overstock",
+      "name": "Second Shift Materials",
+      "channel": "email",
+      "description": "Move aging stock and consider bundles; choose concessions from the actual inquiry, not a scripted discount.",
+      "objective": "Move aging stock and consider bundles; choose concessions from the actual inquiry, not a scripted discount.",
+      "products": [
+        {
+          "id": "overstock-house-01",
+          "name": "Full-length KD SPF studs",
+          "requirement_id": "house-01",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 200,
+          "list_price": "4.99",
+          "minimum_quantity": 1,
+          "specifications": {
+            "nominal_size": "2x4",
+            "length_ft": 8,
+            "full_length": true,
+            "species_group": "SPF",
+            "grade": "No. 2",
+            "drying": "KD"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-house-01-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "3.14"
+          }
+        },
+        {
+          "id": "overstock-house-02",
+          "name": "KD SPF long framing",
+          "requirement_id": "house-02",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 60,
+          "list_price": "10.86",
+          "minimum_quantity": 1,
+          "specifications": {
+            "nominal_size": "2x6",
+            "length_ft": 10,
+            "species_group": "SPF",
+            "grade": "No. 2",
+            "drying": "KD"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-house-02-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "6.84"
+          }
+        },
+        {
+          "id": "overstock-house-03",
+          "name": "Rated OSB sheathing",
+          "requirement_id": "house-03",
+          "requirement_unit": "sheet",
+          "unit": "sheet",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 40,
+          "list_price": "17.90",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "OSB",
+            "thickness_in": "7/16",
+            "dimensions_ft": "4x8",
+            "designation": "rated sheathing",
+            "exposure": "Exposure 1"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-house-03-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "11.28"
+          }
+        },
+        {
+          "id": "overstock-house-04",
+          "name": "T&G plywood subfloor",
+          "requirement_id": "house-04",
+          "requirement_unit": "sheet",
+          "unit": "sheet",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 60,
+          "list_price": "44.64",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "plywood",
+            "thickness_in": "23/32",
+            "dimensions_ft": "4x8",
+            "edge": "tongue-and-groove",
+            "use": "subfloor",
+            "exposure": "Exposure 1"
+          },
+          "substitution_for": null,
+          "alternatives": [
+            "overstock-house-04-osb"
+          ],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-house-04-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "28.12"
+          }
+        },
+        {
+          "id": "overstock-house-05",
+          "name": "Charcoal architectural shingles",
+          "requirement_id": "house-05",
+          "requirement_unit": "sq_ft",
+          "unit": "bundle",
+          "units_per_sale_unit": "33.33",
+          "pack_size": 1,
+          "stock": 57,
+          "list_price": "42.64",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "asphalt",
+            "type": "architectural shingles",
+            "color": "charcoal",
+            "bundle_coverage_sq_ft": "33.33",
+            "sample_ref": "fixture:charcoal-sample"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-house-05-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "26.86"
+          }
+        },
+        {
+          "id": "overstock-house-06",
+          "name": "Synthetic roofing underlayment",
+          "requirement_id": "house-06",
+          "requirement_unit": "sq_ft",
+          "unit": "roll",
+          "units_per_sale_unit": "500",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "78.78",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "synthetic",
+            "installed_coverage_sq_ft": "500",
+            "use": "under architectural asphalt shingles",
+            "use_evidence_ref": "fixture:roof-system-data",
+            "installed_coverage_conditions": "Fixture coverage already accounts for the stated lap pattern; no extra waste factor."
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-house-06-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "49.63"
+          },
+          "related_requirements": [
+            "house-05"
+          ]
+        },
+        {
+          "id": "overstock-house-10",
+          "name": "R13 fiberglass wall batts",
+          "requirement_id": "house-10",
+          "requirement_unit": "sq_ft",
+          "unit": "bag",
+          "units_per_sale_unit": "40",
+          "pack_size": 1,
+          "stock": 45,
+          "list_price": "32.32",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "fiberglass",
+            "r_value": "R-13",
+            "width_in": 15,
+            "facing": "unfaced",
+            "coverage_sq_ft_per_bag": "40"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-house-10-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "20.36"
+          },
+          "unresolved_clarifications": [
+            {
+              "key": "facing",
+              "owner": "contractor",
+              "required_before_recommendation": true,
+              "question": "Which insulation facing is required?",
+              "status": "unresolved",
+              "answer": null
+            }
+          ],
+          "eligibility": "needs_contractor_clarification"
+        },
+        {
+          "id": "overstock-house-11",
+          "name": "Regular half-inch drywall",
+          "requirement_id": "house-11",
+          "requirement_unit": "sheet",
+          "unit": "sheet",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 180,
+          "list_price": "14.75",
+          "minimum_quantity": 1,
+          "specifications": {
+            "type": "regular drywall",
+            "thickness_in": "1/2",
+            "dimensions_ft": "4x8"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-house-11-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "9.29"
+          }
+        },
+        {
+          "id": "overstock-house-12",
+          "name": "Interior wall cement backer",
+          "requirement_id": "house-12",
+          "requirement_unit": "board",
+          "unit": "board",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 36,
+          "list_price": "16.22",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "cement backer board",
+            "thickness_in": "1/2",
+            "dimensions_ft": "3x5",
+            "manufacturer_stated_use": "interior wall tile backing",
+            "use_evidence_ref": "fixture:cement-backer-data"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-house-12-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "10.22"
+          }
+        },
+        {
+          "id": "overstock-house-13",
+          "name": "Premixed all-purpose joint compound",
+          "requirement_id": "house-13",
+          "requirement_unit": "us_gal",
+          "unit": "pail",
+          "units_per_sale_unit": "4.5",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "21.84",
+          "minimum_quantity": 1,
+          "specifications": {
+            "type": "premixed all-purpose drywall joint compound",
+            "container_us_gal": "4.5"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-house-13-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "13.76"
+          }
+        },
+        {
+          "id": "overstock-house-14",
+          "name": "Paper drywall joint tape",
+          "requirement_id": "house-14",
+          "requirement_unit": "linear_ft",
+          "unit": "roll",
+          "units_per_sale_unit": "500",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "8.58",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "paper",
+            "use": "drywall joint tape",
+            "roll_length_ft": 500
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-house-14-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "5.41"
+          }
+        },
+        {
+          "id": "overstock-house-15",
+          "name": "Coarse-thread drywall screws",
+          "requirement_id": "house-15",
+          "requirement_unit": "lb",
+          "unit": "box",
+          "units_per_sale_unit": "5",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "19.75",
+          "minimum_quantity": 1,
+          "specifications": {
+            "diameter": "#6",
+            "length_in": "1-1/4",
+            "thread": "coarse",
+            "coating": "black phosphate",
+            "net_box_weight_lb": 5
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-house-15-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "12.44"
+          }
+        },
+        {
+          "id": "overstock-house-22",
+          "name": "Square-edge primed MDF baseboard",
+          "requirement_id": "house-22",
+          "requirement_unit": "linear_ft",
+          "unit": "length",
+          "units_per_sale_unit": "12",
+          "pack_size": 1,
+          "stock": 42,
+          "list_price": "12.73",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "MDF",
+            "primed": true,
+            "profile": "square edge",
+            "height_in": "3-1/4",
+            "thickness_in": "9/16",
+            "stock_length_ft": 12
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-house-22-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "8.02"
+          }
+        },
+        {
+          "id": "overstock-house-23",
+          "name": "Light-oak click-lock vinyl plank",
+          "requirement_id": "house-23",
+          "requirement_unit": "sq_ft",
+          "unit": "carton",
+          "units_per_sale_unit": "23.5",
+          "pack_size": 1,
+          "stock": 27,
+          "list_price": "61.10",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "vinyl plank",
+            "joint": "click-lock",
+            "overall_thickness_mm": 6,
+            "wear_layer_mil": 20,
+            "finish": "light oak look",
+            "carton_coverage_sq_ft": "23.5",
+            "sample_ref": "fixture:light-oak-finish-sample"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-house-23-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "38.49"
+          }
+        },
+        {
+          "id": "overstock-house-04-osb",
+          "name": "T&G OSB subfloor — proposed plywood substitution",
+          "requirement_id": "house-04",
+          "requirement_unit": "sheet",
+          "unit": "sheet",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 60,
+          "list_price": "32.40",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "OSB",
+            "thickness_in": "23/32",
+            "dimensions_ft": "4x8",
+            "edge": "tongue-and-groove",
+            "use": "subfloor",
+            "exposure": "Exposure 1"
+          },
+          "substitution_for": "house-04",
+          "alternatives": [
+            "overstock-house-04"
+          ],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:overstock-osb-subfloor-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "21.20"
+          },
+          "eligibility": "needs_contractor_approval",
+          "substitution_difference": "OSB replaces specified plywood; no engineering equivalence is asserted."
+        }
+      ],
+      "slots": [
+        {
+          "id": "standard",
+          "label": "94103 zone estimate — delivered by Sept 18",
+          "days": 6,
+          "delivery_date": "2026-09-18",
+          "fee": "68.00",
+          "capacity": 2500,
+          "delivery_zone": "94103",
+          "quote_basis": "synthetic_zone_estimate"
+        }
+      ],
+      "discounts": [],
+      "private": {
+        "max_discount_percent": "18",
+        "min_margin_percent": "9",
+        "delivery_cost": "26"
+      }
+    },
+    {
+      "id": "local",
+      "name": "Neighborhood Delivery Supply",
+      "channel": "agent-to-agent",
+      "description": "Optimize delivery consolidation and practical package fit; negotiate actual tradeoffs.",
+      "objective": "Optimize delivery consolidation and practical package fit; negotiate actual tradeoffs.",
+      "products": [
+        {
+          "id": "local-house-01",
+          "name": "Full-length KD SPF studs",
+          "requirement_id": "house-01",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 200,
+          "list_price": "4.85",
+          "minimum_quantity": 1,
+          "specifications": {
+            "nominal_size": "2x4",
+            "length_ft": 8,
+            "full_length": true,
+            "species_group": "SPF",
+            "grade": "No. 2",
+            "drying": "KD"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-01-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "3.06"
+          }
+        },
+        {
+          "id": "local-house-02",
+          "name": "KD SPF long framing",
+          "requirement_id": "house-02",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 60,
+          "list_price": "10.75",
+          "minimum_quantity": 1,
+          "specifications": {
+            "nominal_size": "2x6",
+            "length_ft": 10,
+            "species_group": "SPF",
+            "grade": "No. 2",
+            "drying": "KD"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-02-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "6.77"
+          }
+        },
+        {
+          "id": "local-house-03",
+          "name": "Rated OSB sheathing",
+          "requirement_id": "house-03",
+          "requirement_unit": "sheet",
+          "unit": "sheet",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 40,
+          "list_price": "17.18",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "OSB",
+            "thickness_in": "7/16",
+            "dimensions_ft": "4x8",
+            "designation": "rated sheathing",
+            "exposure": "Exposure 1"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-03-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "10.82"
+          }
+        },
+        {
+          "id": "local-house-04",
+          "name": "T&G plywood subfloor",
+          "requirement_id": "house-04",
+          "requirement_unit": "sheet",
+          "unit": "sheet",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 60,
+          "list_price": "48.36",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "plywood",
+            "thickness_in": "23/32",
+            "dimensions_ft": "4x8",
+            "edge": "tongue-and-groove",
+            "use": "subfloor",
+            "exposure": "Exposure 1"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-04-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "30.47"
+          }
+        },
+        {
+          "id": "local-house-05",
+          "name": "Charcoal architectural shingles",
+          "requirement_id": "house-05",
+          "requirement_unit": "sq_ft",
+          "unit": "bundle",
+          "units_per_sale_unit": "33.33",
+          "pack_size": 1,
+          "stock": 57,
+          "list_price": "41.41",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "asphalt",
+            "type": "architectural shingles",
+            "color": "charcoal",
+            "bundle_coverage_sq_ft": "33.33",
+            "sample_ref": "fixture:charcoal-sample"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-05-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "26.09"
+          }
+        },
+        {
+          "id": "local-house-06",
+          "name": "Synthetic roofing underlayment",
+          "requirement_id": "house-06",
+          "requirement_unit": "sq_ft",
+          "unit": "roll",
+          "units_per_sale_unit": "500",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "78.00",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "synthetic",
+            "installed_coverage_sq_ft": "500",
+            "use": "under architectural asphalt shingles",
+            "use_evidence_ref": "fixture:roof-system-data",
+            "installed_coverage_conditions": "Fixture coverage already accounts for the stated lap pattern; no extra waste factor."
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-06-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "49.14"
+          },
+          "related_requirements": [
+            "house-05"
+          ]
+        },
+        {
+          "id": "local-house-07",
+          "name": "WRB housewrap 9x100",
+          "requirement_id": "house-07",
+          "requirement_unit": "roll",
+          "unit": "roll",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "107.52",
+          "minimum_quantity": 1,
+          "specifications": {
+            "purpose": "water-resistive barrier",
+            "width_ft": 9,
+            "length_ft": 100,
+            "maker": "DemoWrap",
+            "product_family": "DemoWrap WRB"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-07-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "67.74"
+          }
+        },
+        {
+          "id": "local-house-08",
+          "name": "Wrap-maker seam tape",
+          "requirement_id": "house-08",
+          "requirement_unit": "roll",
+          "unit": "roll",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "15.08",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "housewrap seam tape",
+            "width_in": 2,
+            "length_yd": 55,
+            "approved_wrap_family": "DemoWrap WRB",
+            "approval_evidence_ref": "fixture:demowrap-seam-tape-data"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-08-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "9.50"
+          },
+          "related_requirements": [
+            "house-07"
+          ]
+        },
+        {
+          "id": "local-house-09",
+          "name": "Self-adhered flashing tape",
+          "requirement_id": "house-09",
+          "requirement_unit": "roll",
+          "unit": "roll",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "24.24",
+          "minimum_quantity": 1,
+          "specifications": {
+            "type": "self-adhered window flashing tape",
+            "width_in": 4,
+            "length_ft": 75,
+            "compatible_wrap_family": "DemoWrap WRB",
+            "window_frame_material": "vinyl",
+            "compatibility_evidence_ref": "fixture:flashing-wrap-vinyl-data",
+            "installation_conditions": "Synthetic product sheet: clean dry substrates; fixture temperature range 40–100 F. This is not actual manufacturer evidence."
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-09-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "15.27"
+          },
+          "related_requirements": [
+            "house-07",
+            "house-21"
+          ]
+        },
+        {
+          "id": "local-house-10",
+          "name": "R13 fiberglass wall batts",
+          "requirement_id": "house-10",
+          "requirement_unit": "sq_ft",
+          "unit": "bag",
+          "units_per_sale_unit": "40",
+          "pack_size": 1,
+          "stock": 45,
+          "list_price": "32.00",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "fiberglass",
+            "r_value": "R-13",
+            "width_in": 15,
+            "facing": "unfaced",
+            "coverage_sq_ft_per_bag": "40"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-10-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "20.16"
+          },
+          "unresolved_clarifications": [
+            {
+              "key": "facing",
+              "owner": "contractor",
+              "required_before_recommendation": true,
+              "question": "Which insulation facing is required?",
+              "status": "unresolved",
+              "answer": null
+            }
+          ],
+          "eligibility": "needs_contractor_clarification"
+        },
+        {
+          "id": "local-house-11",
+          "name": "Regular half-inch drywall",
+          "requirement_id": "house-11",
+          "requirement_unit": "sheet",
+          "unit": "sheet",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 180,
+          "list_price": "14.16",
+          "minimum_quantity": 1,
+          "specifications": {
+            "type": "regular drywall",
+            "thickness_in": "1/2",
+            "dimensions_ft": "4x8"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-11-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "8.92"
+          }
+        },
+        {
+          "id": "local-house-12",
+          "name": "Interior wall cement backer",
+          "requirement_id": "house-12",
+          "requirement_unit": "board",
+          "unit": "board",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 36,
+          "list_price": "17.58",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "cement backer board",
+            "thickness_in": "1/2",
+            "dimensions_ft": "3x5",
+            "manufacturer_stated_use": "interior wall tile backing",
+            "use_evidence_ref": "fixture:cement-backer-data"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-12-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "11.08"
+          }
+        },
+        {
+          "id": "local-house-13",
+          "name": "Premixed all-purpose joint compound",
+          "requirement_id": "house-13",
+          "requirement_unit": "us_gal",
+          "unit": "pail",
+          "units_per_sale_unit": "4.5",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "21.21",
+          "minimum_quantity": 1,
+          "specifications": {
+            "type": "premixed all-purpose drywall joint compound",
+            "container_us_gal": "4.5"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-13-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "13.36"
+          }
+        },
+        {
+          "id": "local-house-14",
+          "name": "Paper drywall joint tape",
+          "requirement_id": "house-14",
+          "requirement_unit": "linear_ft",
+          "unit": "roll",
+          "units_per_sale_unit": "500",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "8.50",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "paper",
+            "use": "drywall joint tape",
+            "roll_length_ft": 500
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-14-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "5.36"
+          }
+        },
+        {
+          "id": "local-house-15",
+          "name": "Coarse-thread drywall screws",
+          "requirement_id": "house-15",
+          "requirement_unit": "lb",
+          "unit": "box",
+          "units_per_sale_unit": "5",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "18.96",
+          "minimum_quantity": 1,
+          "specifications": {
+            "diameter": "#6",
+            "length_in": "1-1/4",
+            "thread": "coarse",
+            "coating": "black phosphate",
+            "net_box_weight_lb": 5
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-15-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "11.94"
+          }
+        },
+        {
+          "id": "local-house-16-red",
+          "name": "Half-inch PEX water coil — red",
+          "requirement_id": "house-16",
+          "requirement_unit": "linear_ft",
+          "unit": "coil",
+          "units_per_sale_unit": "100",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "50.96",
+          "minimum_quantity": 1,
+          "specifications": {
+            "nominal_size_in": "1/2",
+            "material": "PEX",
+            "use": "water lines",
+            "coil_length_ft": 100,
+            "connection_system": "DemoPEX expansion fittings",
+            "compatibility_evidence_ref": "fixture:demopex-fitting-data",
+            "color": "red"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-16-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "32.10"
+          },
+          "variant": "red",
+          "unresolved_clarifications": [
+            {
+              "key": "fitting_system",
+              "owner": "contractor",
+              "required_before_recommendation": true,
+              "question": "What fittings must the PEX connect to?",
+              "status": "unresolved",
+              "answer": null
+            }
+          ],
+          "eligibility": "needs_contractor_clarification"
+        },
+        {
+          "id": "local-house-16-blue",
+          "name": "Half-inch PEX water coil — blue",
+          "requirement_id": "house-16",
+          "requirement_unit": "linear_ft",
+          "unit": "coil",
+          "units_per_sale_unit": "100",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "50.96",
+          "minimum_quantity": 1,
+          "specifications": {
+            "nominal_size_in": "1/2",
+            "material": "PEX",
+            "use": "water lines",
+            "coil_length_ft": 100,
+            "connection_system": "DemoPEX expansion fittings",
+            "compatibility_evidence_ref": "fixture:demopex-fitting-data",
+            "color": "blue"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-16-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "32.10"
+          },
+          "variant": "blue",
+          "unresolved_clarifications": [
+            {
+              "key": "fitting_system",
+              "owner": "contractor",
+              "required_before_recommendation": true,
+              "question": "What fittings must the PEX connect to?",
+              "status": "unresolved",
+              "answer": null
+            }
+          ],
+          "eligibility": "needs_contractor_clarification"
+        },
+        {
+          "id": "local-house-17",
+          "name": "Plain-end PVC DWV pipe",
+          "requirement_id": "house-17",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 24,
+          "list_price": "18.18",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "PVC",
+            "designation": "Schedule 40 DWV",
+            "diameter_in": 2,
+            "length_ft": 10,
+            "ends": "plain"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-17-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "11.45"
+          }
+        },
+        {
+          "id": "local-house-18",
+          "name": "12/2 copper NM-B cable",
+          "requirement_id": "house-18",
+          "requirement_unit": "roll",
+          "unit": "roll",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "132.00",
+          "minimum_quantity": 1,
+          "specifications": {
+            "designation": "12/2 NM-B",
+            "conductor_material": "copper",
+            "with_ground": true,
+            "roll_length_ft": 250
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-18-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "83.16"
+          }
+        },
+        {
+          "id": "local-house-19",
+          "name": "22-cu-in nail-on electrical box",
+          "requirement_id": "house-19",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 60,
+          "list_price": "2.02",
+          "minimum_quantity": 1,
+          "specifications": {
+            "gangs": 1,
+            "material": "plastic",
+            "work_type": "new-work",
+            "mounting": "nail-on",
+            "volume_cu_in": 22
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-19-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "1.27"
+          }
+        },
+        {
+          "id": "local-house-20",
+          "name": "Unprepared primed interior door slab",
+          "requirement_id": "house-20",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "79.04",
+          "minimum_quantity": 1,
+          "specifications": {
+            "type": "slab",
+            "core": "hollow",
+            "surface": "smooth flush",
+            "primed": true,
+            "width_in": 30,
+            "height_in": 80,
+            "thickness_in": "1-3/8",
+            "bores": false,
+            "hinge_mortises": false
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-20-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "49.80"
+          }
+        },
+        {
+          "id": "local-house-21",
+          "name": "Fixed white vinyl window",
+          "requirement_id": "house-21",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "186.85",
+          "minimum_quantity": 1,
+          "specifications": {
+            "operation": "fixed",
+            "frame_material": "vinyl",
+            "frame_color": "white",
+            "actual_unit_width_in": 24,
+            "actual_unit_height_in": 36,
+            "nail_fin": true,
+            "glazing": "double-pane clear insulated glass",
+            "performance_sheet_ref": "fixture:fixed-window-performance"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-21-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "117.72"
+          }
+        },
+        {
+          "id": "local-house-22",
+          "name": "Square-edge primed MDF baseboard",
+          "requirement_id": "house-22",
+          "requirement_unit": "linear_ft",
+          "unit": "length",
+          "units_per_sale_unit": "12",
+          "pack_size": 1,
+          "stock": 42,
+          "list_price": "12.60",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "MDF",
+            "primed": true,
+            "profile": "square edge",
+            "height_in": "3-1/4",
+            "thickness_in": "9/16",
+            "stock_length_ft": 12
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-22-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "7.94"
+          }
+        },
+        {
+          "id": "local-house-23",
+          "name": "Light-oak click-lock vinyl plank",
+          "requirement_id": "house-23",
+          "requirement_unit": "sq_ft",
+          "unit": "carton",
+          "units_per_sale_unit": "23.5",
+          "pack_size": 1,
+          "stock": 27,
+          "list_price": "58.66",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "vinyl plank",
+            "joint": "click-lock",
+            "overall_thickness_mm": 6,
+            "wear_layer_mil": 20,
+            "finish": "light oak look",
+            "carton_coverage_sq_ft": "23.5",
+            "sample_ref": "fixture:light-oak-finish-sample"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-23-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "36.96"
+          }
+        },
+        {
+          "id": "local-house-24",
+          "name": "Factory-white eggshell wall paint",
+          "requirement_id": "house-24",
+          "requirement_unit": "us_gal",
+          "unit": "pail",
+          "units_per_sale_unit": "5",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "116.48",
+          "minimum_quantity": 1,
+          "specifications": {
+            "use": "interior wall",
+            "base": "water-based",
+            "sheen": "eggshell",
+            "color": "factory white",
+            "container_us_gal": 5
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-24-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "73.38"
+          }
+        },
+        {
+          "id": "local-house-25",
+          "name": "Factory-white semi-gloss trim enamel",
+          "requirement_id": "house-25",
+          "requirement_unit": "us_gal",
+          "unit": "can",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "31.31",
+          "minimum_quantity": 1,
+          "specifications": {
+            "use": "interior trim enamel",
+            "base": "water-based",
+            "sheen": "semi-gloss",
+            "color": "factory white",
+            "container_us_gal": 1
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:local-house-25-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "19.73"
+          }
+        }
+      ],
+      "slots": [
+        {
+          "id": "express",
+          "label": "94103 dedicated delivery Sept 15",
+          "days": 3,
+          "delivery_date": "2026-09-15",
+          "fee": "120.00",
+          "capacity": 2500
+        },
+        {
+          "id": "shared",
+          "label": "94103 shared route Sept 18",
+          "days": 6,
+          "delivery_date": "2026-09-18",
+          "fee": "35.00",
+          "capacity": 2500
+        }
+      ],
+      "discounts": [],
+      "private": {
+        "max_discount_percent": "10",
+        "min_margin_percent": "12",
+        "delivery_cost": "18"
+      }
+    },
+    {
+      "id": "trader",
+      "name": "Forward Materials Desk",
+      "channel": "agent-to-agent",
+      "description": "Research and explain market uncertainty; consider forward quotes but never place trades.",
+      "objective": "Research and explain market uncertainty; consider forward quotes but never place trades.",
+      "products": [
+        {
+          "id": "trader-house-01",
+          "name": "Full-length KD SPF studs",
+          "requirement_id": "house-01",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 200,
+          "list_price": "4.80",
+          "minimum_quantity": 1,
+          "specifications": {
+            "nominal_size": "2x4",
+            "length_ft": 8,
+            "full_length": true,
+            "species_group": "SPF",
+            "grade": "No. 2",
+            "drying": "KD"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:trader-house-01-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "3.02"
+          }
+        },
+        {
+          "id": "trader-house-02",
+          "name": "KD SPF long framing",
+          "requirement_id": "house-02",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 60,
+          "list_price": "10.32",
+          "minimum_quantity": 1,
+          "specifications": {
+            "nominal_size": "2x6",
+            "length_ft": 10,
+            "species_group": "SPF",
+            "grade": "No. 2",
+            "drying": "KD"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:trader-house-02-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "6.50"
+          }
+        },
+        {
+          "id": "trader-house-03",
+          "name": "Rated OSB sheathing",
+          "requirement_id": "house-03",
+          "requirement_unit": "sheet",
+          "unit": "sheet",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 40,
+          "list_price": "18.62",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "OSB",
+            "thickness_in": "7/16",
+            "dimensions_ft": "4x8",
+            "designation": "rated sheathing",
+            "exposure": "Exposure 1"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:trader-house-03-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "11.73"
+          }
+        },
+        {
+          "id": "trader-house-04",
+          "name": "T&G plywood subfloor",
+          "requirement_id": "house-04",
+          "requirement_unit": "sheet",
+          "unit": "sheet",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 60,
+          "list_price": "46.96",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "plywood",
+            "thickness_in": "23/32",
+            "dimensions_ft": "4x8",
+            "edge": "tongue-and-groove",
+            "use": "subfloor",
+            "exposure": "Exposure 1"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:trader-house-04-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "29.58"
+          }
+        },
+        {
+          "id": "trader-house-05",
+          "name": "Charcoal architectural shingles",
+          "requirement_id": "house-05",
+          "requirement_unit": "sq_ft",
+          "unit": "bundle",
+          "units_per_sale_unit": "33.33",
+          "pack_size": 1,
+          "stock": 57,
+          "list_price": "41.00",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "asphalt",
+            "type": "architectural shingles",
+            "color": "charcoal",
+            "bundle_coverage_sq_ft": "33.33",
+            "sample_ref": "fixture:charcoal-sample"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:trader-house-05-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "25.83"
+          }
+        },
+        {
+          "id": "trader-house-06",
+          "name": "Synthetic roofing underlayment",
+          "requirement_id": "house-06",
+          "requirement_unit": "sq_ft",
+          "unit": "roll",
+          "units_per_sale_unit": "500",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "74.88",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "synthetic",
+            "installed_coverage_sq_ft": "500",
+            "use": "under architectural asphalt shingles",
+            "use_evidence_ref": "fixture:roof-system-data",
+            "installed_coverage_conditions": "Fixture coverage already accounts for the stated lap pattern; no extra waste factor."
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:trader-house-06-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "47.17"
+          },
+          "related_requirements": [
+            "house-05"
+          ]
+        },
+        {
+          "id": "trader-house-17",
+          "name": "Plain-end PVC DWV pipe",
+          "requirement_id": "house-17",
+          "requirement_unit": "each",
+          "unit": "each",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 24,
+          "list_price": "18.00",
+          "minimum_quantity": 1,
+          "specifications": {
+            "material": "PVC",
+            "designation": "Schedule 40 DWV",
+            "diameter_in": 2,
+            "length_ft": 10,
+            "ends": "plain"
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:trader-house-17-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "11.34"
+          }
+        },
+        {
+          "id": "trader-house-18",
+          "name": "12/2 copper NM-B cable",
+          "requirement_id": "house-18",
+          "requirement_unit": "roll",
+          "unit": "roll",
+          "units_per_sale_unit": "1",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "126.72",
+          "minimum_quantity": 1,
+          "specifications": {
+            "designation": "12/2 NM-B",
+            "conductor_material": "copper",
+            "with_ground": true,
+            "roll_length_ft": 250
+          },
+          "substitution_for": null,
+          "alternatives": [],
+          "tax_treatment": "all_fixture_taxes_included",
+          "product_info_ref": "fixture:trader-house-18-product-data",
+          "evidence_kind": "synthetic_product_data",
+          "private": {
+            "unit_cost": "79.83"
+          }
+        }
+      ],
+      "slots": [
+        {
+          "id": "standard",
+          "label": "94103 zone estimate — delivered by Sept 18",
+          "days": 6,
+          "delivery_date": "2026-09-18",
+          "fee": "68.00",
+          "capacity": 2500,
+          "delivery_zone": "94103",
+          "quote_basis": "synthetic_zone_estimate"
+        },
+        {
+          "id": "forward",
+          "label": "Forward delivery Sept 25 — needs deadline approval",
+          "days": 13,
+          "delivery_date": "2026-09-25",
+          "fee": "48.00",
+          "capacity": 2500,
+          "needs_deadline_approval": true
+        }
+      ],
+      "discounts": [],
+      "private": {
+        "max_discount_percent": "12",
+        "min_margin_percent": "10",
+        "delivery_cost": "30"
+      }
+    }
+  ]
+}

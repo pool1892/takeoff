@@ -2,7 +2,9 @@
 
 This implements supplier epic [#2](https://github.com/pool1892/takeoff/issues/2): a simulated supplier market reached through a website, Ambiguous email, and supplier agents. Hermes remains the buyer on the other computer. Ambiguous remains the workspace interface. The supplier service owns commercial validation and its private ledger.
 
-The four personalities are general packages, overstock negotiation, local delivery coordination, and a market-aware trader. The first three support the core package without phone or trading. The fixture is proposed representative data, not a construction-ready house specification. Replace it with the team’s chosen scenario before scoring.
+The four personalities are general packages, overstock negotiation, local delivery coordination, and a market-aware trader. The first three support the core package without phone or trading. The current target is the **25 source requirements** in [the contractor message](../../examples/procurement/contractor-house-request.txt). Christoph’s buyer agent confirmed adoption on September 12, 2026, with source lines 1–3 as the first partial integration slice and the catalog’s OSB-for-plywood subfloor change as the proposed approval opportunity. All supplier businesses, products, prices, and product documents are synthetic demonstration data.
+
+See the [current integration handoff](integration.md) for the frozen run, public discovery URL, sender identity, first inquiry, and remaining live verification. The frozen fixture retains its original proposal-version label for reproducibility; adoption does not rewrite an active run.
 
 ## Start the local market
 
@@ -18,13 +20,23 @@ python3 -m venv .venv
 
 Open `http://127.0.0.1:8000/`. The website and HTTP API work without an OpenAI key. After installation, `takeoff-suppliers` is equivalent to `python -m takeoff_suppliers.cli`. Use `--home DIRECTORY` before the command to select a different ignored local configuration directory.
 
+Fresh configuration selects `src/takeoff_suppliers/fixtures/house.json` (25 requirements). Existing `config.json` is preserved by `init`: explicitly update an older `scenario_path` before creating a new house run. `fixtures/demo.json` remains the old eight-requirement development fixture; it is not the adopted house scenario. A run freezes its starting scenario independently of later file changes.
+
+Publish read-only discovery for one explicitly selected run:
+
+```sh
+.venv/bin/python -m takeoff_suppliers.cli serve --host 127.0.0.1 --port 8000 --public-run RUN_ID
+```
+
+This exposes `/public`, `/public/manifest`, `/public/vendors`, `/public/vendors/VENDOR_ID/catalog`, and the linked supplier/product pages without a token. It exposes public product facts and configured supplier contacts, not the contractor’s raw message or private economics. Inquiries, offers, approvals, acceptance, and other authenticated routes remain protected. Omit `--public-run` to disable this public discovery surface.
+
 `init` creates `.local/suppliers/config.json` and `.local/suppliers/secrets.json` with mode 600. It preserves existing settings and keys, creates distinct buyer and operator tokens when missing, and never prints them. Keep the entire local directory out of Git. Relative configured paths resolve from the working directory.
 
 The supplier machine must serve a public HTTPS tunnel or another mutually reachable endpoint for the buyer machine. Share that URL and the buyer-scoped token through the team’s agreed private channel. Tunnel creation and the cross-computer connection require verification on the actual machines; local tests do not establish either.
 
 ## Configure the real channels
 
-Workspace setup is separate from the fixture. Configure the current supplier workspace; the buyer workspace remains intentionally deferred until the team supplies its new reference. Never reuse an unrelated old buyer workspace.
+Workspace setup is separate from the fixture. The adopted buyer workspace is `9ab01362-770d-4f8c-98a5-c431e5e44dac`, with sender `takeoff-hermes@takeoffai.ambi.cc`. Configure that reference and the separate supplier workspace; never reuse an unrelated old workspace. A known workspace reference does not establish that a remote exchange has succeeded.
 
 The nonsecret configuration has this shape:
 
@@ -32,9 +44,9 @@ The nonsecret configuration has this shape:
 {
   "database_path": ".local/suppliers/market.sqlite",
   "transport_path": ".local/suppliers/transport.sqlite",
-  "scenario_path": null,
+  "scenario_path": "src/takeoff_suppliers/fixtures/house.json",
   "buyer_id": "demo-buyer",
-  "buyer_workspace_id": null,
+  "buyer_workspace_id": "9ab01362-770d-4f8c-98a5-c431e5e44dac",
   "supplier_workspace_id": "CURRENT_SUPPLIER_WORKSPACE_ID",
   "supplier_workspace_slug": "CURRENT_SUPPLIER_WORKSPACE_SLUG",
   "runtime_backend": "codex",
@@ -46,7 +58,7 @@ The nonsecret configuration has this shape:
       "token_env": "AMBIGUOUS_GENERAL_API_KEY",
       "email": "GENERAL_VENDOR_EMAIL",
       "chat_threads": [],
-      "buyers": {},
+      "buyers": {"takeoff-hermes@takeoffai.ambi.cc": "demo-buyer"},
       "chat_buyers": {}
     }
   }
@@ -59,7 +71,7 @@ The default supplier runtime uses the installed Codex CLI and its existing accou
 
 Codex uses isolated supplier threads and host-controlled catalog, inquiry, and offer tools. The host connects those agents to Ambiguous mail and records. Personal Codex tools and filesystem execution are disabled for supplier turns. The hosted backend additionally supports read-only Ambiguous MCP and optional Exa MCP through `exa_mcp_url`; keep credential-bearing URLs in ignored configuration. Exa research in the Codex backend and trading execution remain extensions.
 
-For each participating vendor, configure `buyers` as `{"actual-buyer-email": "demo-buyer"}`. Chat uses `chat_threads` pairs of `[channel_id, root_message_id]` and `chat_buyers` mapping sender user IDs to the logical buyer ID. Polling is limited to those configured senders and threads. Email is the proposed cross-workspace agent transport; chat is supported within configured workspace conversations. Confirm the actual handoff with Christoph before claiming cross-computer integration.
+For each participating vendor, configure `buyers` as `{"takeoff-hermes@takeoffai.ambi.cc": "demo-buyer"}` (or the same logical buyer ID configured for its run). Chat uses `chat_threads` pairs of `[channel_id, root_message_id]` and `chat_buyers` mapping sender user IDs to the logical buyer ID. Polling is limited to those configured senders and threads. Email is the cross-workspace agent transport; chat is supported within configured workspace conversations. Actual cross-computer delivery and response still require a captured round trip.
 
 ```sh
 .venv/bin/python -m takeoff_suppliers.cli doctor
@@ -96,7 +108,13 @@ The supplier website exposes product discovery and quote inspection. HTTP client
 - `GET /v1/runs/RUN_ID/offers/QUOTE_ID`
 - `POST /v1/runs/RUN_ID/offers/QUOTE_ID/accept`
 
-Use `/docs` for the current HTTP schema. Quotes carry complete canonical terms: units, pack constraints, fees, discounts, delivery, conditions, expiry, source references, and total. Buyer-facing data excludes private costs and negotiation floors. Counters reference `previous_quote_id`; issued revisions stay distinguishable from proposals and commitments.
+Use `/docs` for the current HTTP schema. Quotes carry canonical commercial terms: units, pack constraints, fees, discounts, delivery, conditions, expiry, source references, and total. Buyer-facing data excludes private costs and negotiation floors. Counters reference `previous_quote_id`; issued revisions stay distinguishable from proposals and commitments.
+
+Quantity is the number of whole **sale units**. `units_per_sale_unit` is a decimal string converting each sale unit into `requirement_unit`; offer `covered_quantity` records normalized coverage. For example, nine 23.5-sq-ft flooring cartons cover 211.5 sq ft against the 200-sq-ft need. Show the excess and charge for nine cartons. The source already includes the contractor’s allowance: add no waste percentage. Line 16 requires 100 ft of red PEX and 100 ft of blue PEX separately; one color cannot cover the other.
+
+The adopted synthetic tax convention is `all_fixture_taxes_included`: zero additional fixture tax beyond the quoted amounts. This is a demo pricing convention, not a real tax calculation. Delivery is a 94103-zone estimate under the stated synthetic slot terms; an unknown fee or condition must remain explicit.
+
+Insulation facing (line 10) and the existing PEX fitting identity (line 16) remain unresolved contractor facts. Product/assembly evidence also needs buyer inspection, including related wrap/tape/window choices. The scorer’s `validation_scope: commercial_terms_and_material_coverage` verifies that limited scope; a valid score does not resolve those questions or certify a construction-ready buying plan.
 
 Ordinary email may contain free text. For structured agent-to-agent exchanges, send a JSON object as the email’s plain-text body:
 
@@ -140,6 +158,8 @@ The reply contains a recorded approval ID with the incoming source message as ev
 
 Free-text “yes” does not create a commitment. Acceptance rechecks stock and recorded approvals, reserves simulated inventory, and creates a simulated fulfillment task in the supplier Ambiguous workspace. The response links the accepted terms to the task ID. No real order or dispatch occurs.
 
+The adopted contractor request asks for a **buying recommendation, not orders**. Its first integration exchange is quote-only; the acceptance example documents the simulation capability and does not authorize its use for that task.
+
 ## Reset, evidence, and recovery
 
 ```sh
@@ -159,7 +179,7 @@ Confirmed email sends use Ambiguous idempotency keys. Saved function outcomes ar
 
 ## Optional phone and verification status
 
-`serve --voice` enables the bounded OpenAI speech adapter and requires `OPENAI_API_KEY`; see [phone setup and protocol](voice.md). Phone is not required to complete the core package. It must pass a live remote exchange before joining the recorded demonstration.
+`serve --voice` enables the bounded OpenAI speech adapter and requires `OPENAI_API_KEY`; see [phone setup and protocol](voice.md). The buyer’s Fable voice handoff is pending coordination; do not treat this optional WebSocket adapter as an agreed Fable connection. Phone is not required to complete the core package and must pass a live remote exchange before joining the recorded demonstration.
 
 Focused tests cover commercial arithmetic and constraints, browser discovery and acceptance, identity checks, message deduplication, durable function recovery, explicit approval, task mirroring, and CLI configuration. Run:
 
@@ -169,4 +189,4 @@ Focused tests cover commercial arithmetic and constraints, browser discovery and
 
 MockTransport tests exercise documented API contracts, not a live OpenAI or Ambiguous exchange. A real supplier identity check, a live agent turn, a live email round trip, a cross-computer trial, and recorded replay are separate milestones. Report which actually occurred. The three intended demo themes are negotiation quality, observed benefit to both sides, and rapid completion into inspectable records; outcomes must come from the recorded run.
 
-On September 12, 2026, the local setup verified four distinct supplier identities and published their catalog documents and Sheets in the configured supplier workspace. A live Codex 0.154.0 turn using the existing ChatGPT account called the catalog and offer tools, producing a simulated $358.38 delivered quote for 10 sheathing sheets and 10 drywall sheets. The first unsuccessful tool-host attempt was retained alongside the successful retry. The running website returned its authenticated catalog and rejected unauthenticated access. Buyer-workspace setup, live email exchange, cross-computer operation, human comparison, and live audio remain unverified.
+On September 12, 2026, the local setup verified four distinct supplier identities and published catalog documents and Sheets in the supplier workspace. An earlier live Codex turn produced a simulated $358.38 quote using the **old eight-line fixture**; this is runtime plumbing evidence, not a result for the adopted 25-line house request. The current public tunnel and frozen house run are documented in the integration handoff. Buyer adoption and the workspace/sender references are confirmed; an actual buyer-to-supplier cross-computer exchange, human comparison, and live voice are **not yet verified** here.

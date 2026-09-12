@@ -38,9 +38,16 @@ class TransportState:
                 self.db.execute('SELECT key,value FROM transport_state').fetchall()}
         sessions = {key: value for key, value in rows.items() if key.startswith((f'session:{run_id}:', f'codex-session:{run_id}:'))}
         ids = set(sessions.values()) | {'codex-' + v for k, v in sessions.items() if k.startswith('codex-session:')}
+        mirrors = rows.get(f'records:{run_id}') or {'run_id': run_id, 'vendors': {}}
+        # Per-vendor workers may sync concurrently; their references have separate
+        # keys so the last worker cannot overwrite another supplier's evidence.
+        for key, value in rows.items():
+            if key.startswith(f'records:{run_id}:'):
+                mirrors['vendors'][key.rsplit(':', 1)[1]] = value
+        mirrors['ok'] = not any(v.get('errors') for v in mirrors['vendors'].values())
         return {
             'sessions': sessions,
-            'record_mirrors': rows.get(f'records:{run_id}'),
+            'record_mirrors': mirrors,
             'codex_turns': {k: v for k, v in rows.items() if k.startswith(f'codex-input:{run_id}:')},
             'messages': {k: v for k, v in rows.items() if k.startswith(f'message:{run_id}:')},
             'fulfillment_tasks': {k: v for k, v in rows.items() if k.startswith(f'fulfillment:{run_id}:')},
