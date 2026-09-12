@@ -2,14 +2,14 @@
 
 Christoph’s buyer agent confirmed adoption on **September 12, 2026**: use all 25 numbered requirements in the [immutable contractor message](../../examples/procurement/contractor-house-request.txt), begin integration with source lines 1–3, and retain the catalog’s proposed OSB-for-plywood subfloor change for a consequential contractor decision. The first three lines are a **partial** slice, not completion of the house request. The task is quote-only and asks for a recommendation; do not place orders.
 
-## Frozen run and discovery
+## Active full-25 run and discovery
 
 | Field | Current handoff |
 | --- | --- |
 | Supplier base URL | `https://multiply-cameo-clash.ngrok-free.dev` |
 | Public website | `https://multiply-cameo-clash.ngrok-free.dev/public` |
 | Public manifest | `https://multiply-cameo-clash.ngrok-free.dev/public/manifest` |
-| Run ID | `run_402632f04bb94032b83ffa8ecd69f96f` |
+| Run ID | `run_187409fdfa344b2e95460891f87571b1` |
 | Frozen scenario version | `house-25-proposal-1` |
 | Recorded scenario hash prefix | `0d8ff59969852bfc` |
 | Buyer workspace | `9ab01362-770d-4f8c-98a5-c431e5e44dac` |
@@ -26,23 +26,27 @@ Public reads require no credential:
 - `GET /public/vendors/general`
 - `GET /public/vendors/general/products/general-house-01`
 
-The supplier enables these routes with `serve --public-run run_402632f04bb94032b83ffa8ecd69f96f`. Public discovery contains supplier product facts and contact routes. It does not publish the contractor’s raw message, unrelated runs, private economics, or model traces. HTTP inquiries and commercial mutations require the buyer-scoped token, shared privately; no token is included in this document or a URL. The operator token is separate and stays on the supplier computer.
+The supplier enables these routes with `serve --public-run run_187409fdfa344b2e95460891f87571b1`. Public discovery contains supplier product facts and contact routes. It does not publish the contractor’s raw message, unrelated runs, private economics, or model traces. HTTP inquiries and commercial mutations require the buyer-scoped token, shared privately; no token is included in this document or a URL. The operator token is separate and stays on the supplier computer.
 
-## First quote-only exchange
+## Scoped inquiry format
 
-Send this plain-text JSON email from the authorized buyer address to `takeoff-overstock@spike-team.ambi.cc` (the `overstock` supplier in the manifest). Product choices should be checked against the public catalog facts, not inferred solely from identifiers.
+The following three-line example shows the envelope format; the active task covers all 25 lines and the buyer chooses supplier packages. Send JSON as the Ambiguous `body_markdown` from the authorized buyer address to `takeoff-overstock@spike-team.ambi.cc` (the `overstock` supplier in the manifest). Product choices should be checked against the public catalog facts, not inferred solely from identifiers.
 
 ```json
 {
   "schema_version": "takeoff.supplier.v1",
   "type": "inquiry",
-  "run_id": "run_402632f04bb94032b83ffa8ecd69f96f",
+  "run_id": "run_187409fdfa344b2e95460891f87571b1",
   "vendor_id": "overstock",
   "message": "Quote only, no order or stock commitment. For contractor source lines 1–3, please quote 200 full 8-foot 2x4 KD SPF No. 2 studs; 60 full 10-foot 2x6 KD SPF No. 2 lengths; and 40 sheets of 7/16-inch 4x8 rated OSB sheathing, Exposure 1. Delivery zone 94103 by September 18, 2026. Confirm exact product facts, selling units, stock, delivery, all fees, tax treatment, expiry, and total. Return a current quote reference and evidence. This is the first three-line slice of a 25-line request."
 }
 ```
 
 The initial corresponding catalog candidates are `overstock-house-01`, `overstock-house-02`, and `overstock-house-03`, with initial stock 200, 60, and 40 in each/each/sheet sale units. Current stock comes from the running ledger. The supplier model chooses its response and can issue a validated quote; the buyer retains the actual response, request/thread reference, quote revision, and terms as evidence. No scripted successful result is supplied by this handoff.
+
+## Running channels
+
+The `general`, `overstock`, and `local` workers are active for this fresh run. Their supplier emails are `takeoff-general@spike-team.ambi.cc`, `takeoff-overstock@spike-team.ambi.cc`, and `takeoff-local@spike-team.ambi.cc`. Each uses independent supplier identity, model context, and private commercial state. Website discovery is public; ordinary email and structured agent-to-agent messages both use authenticated Ambiguous mail. A distinct cross-workspace native chat transport is not verified. HTTP mutations retain buyer authentication.
 
 ## Full-package boundaries
 
@@ -60,6 +64,6 @@ The local scorer reports `validation_scope: commercial_terms_and_material_covera
 
 ## Verification still required
 
-Christoph’s implementation agent verified the public catalog from the buyer computer. Two authenticated Chip emails reached the supplier and received catalog-only replies; recipient inspection showed tracking pixels without authored text. The buyer has corrected outgoing mail to `body_markdown`, and the supplier now hydrates inbox entries with `GET /api/mail/{id}?detail=full` and rejects empty content before invoking the model. Previous attempts remain recorded. The corrected live request produced quote `quote_d7479895425441aa89b8ddb47946ddcc` at 21:32 UTC: USD 2,300 delivered for quantities 200/60/40, with six-day delivery and one-hour validity. Supplier record mirroring succeeded and the email reply was sent at 21:32:46 UTC with RFC message ID `<90081385-3263-41ec-a6ae-c0830e3b3bb7@ambi.cc>`. Buyer receipt, a counteroffer, and buyer-workspace display remain the next live checks.
+Christoph’s implementation agent verified the public catalog from the buyer computer. Two authenticated Chip emails reached the supplier and received catalog-only replies; recipient inspection showed tracking pixels without authored text. The buyer has corrected outgoing mail to `body_markdown`, and the supplier now hydrates inbox entries with `GET /api/mail/{id}?detail=full` and rejects empty content before invoking the model. Previous attempts remain recorded. The completed first slice used archived run `run_402632f04bb94032b83ffa8ecd69f96f`. Its corrected live request produced quote `quote_d7479895425441aa89b8ddb47946ddcc` at 21:32 UTC: USD 2,300 delivered for quantities 200/60/40, with six-day delivery and one-hour validity. Supplier record mirroring succeeded and the email reply was sent at 21:32:46 UTC with RFC message ID `<90081385-3263-41ec-a6ae-c0830e3b3bb7@ambi.cc>`. Christoph verified Hermes received/imported that exact quote, validated all three lines, published its recommendation, and marked the Ambiguous task done at 21:35 UTC. The buyer proposed USD 2,300 and the supplier matched it; there was no post-quote counteroffer. The first run is preserved, and its worker is stopped. The fresh active run above is for competitive quotes across the full 25-line task.
 
 The Fable voice handoff is pending coordination. The optional supplier WebSocket voice adapter exists separately; phone is not a dependency of the core 25-line package and is not yet a verified Fable integration. Human comparisons and live voice require their own evidence. Recorded replay must be labeled as replay.
