@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from buyer import store
 from buyer.cli import comment, comments, current_quotes, json_objects, snapshot as run_snapshot
 from bridge import CONTRACTOR, BridgeError, extract_response, load_personality, safe_reply
+from progress import notify_progress
 
 
 MAX_CONSECUTIVE_CONTINUATIONS = 3
@@ -340,7 +341,15 @@ Tool entry: python /workspace/buyer/cli.py --task-id TASK_ID COMMAND --input JSO
 Use snapshot (no --input) first to inspect current persisted state. Keep temporary
 JSON files inside /workspace/.local/hermes/workspace, the canonical writable root.
 Use terminal tools to read and write files and run this CLI. The /opt/data/workspace
-alias is rejected by the Hermes file-write guard. Available commands:
+alias is rejected by the Hermes file-write guard. Write JSON as literal data with
+printf '%s' 'JSON_CONTENT' > /workspace/.local/hermes/workspace/input.json, then
+run the documented CLI with --input pointing to that file. For content containing
+apostrophes, use a quoted heredoc (cat > the canonical file path <<'JSON', literal
+JSON on following lines, then JSON alone). Do not use python -c, node -e, eval, or
+generated scripts to write these inputs. Keep approval controls unchanged; if an
+operation is blocked, report the specific blocked operation rather than changing
+permissions. The documented CLI remains the only supplier-action boundary.
+Available commands:
 evidence: {id:<source ID>} reads one preserved supplier mail/catalog/contractor source.
 Snapshots intentionally omit large bodies. Use evidence IDs for the sources you need;
 do not dump the entire internal state file or repeatedly refetch unchanged catalogs.
@@ -349,7 +358,10 @@ test files unless a concrete CLI error requires diagnosis. Finish the next actio
 procurement step in this turn; a statement of intended work is not recorded progress.
 Ask for missing contractor essentials while independently sourcing and requesting
 quotes for the other materials. Missing facing or fitting intent must not postpone
-the first inquiries for materials whose requirements are already clear.
+the first inquiries for materials whose requirements are already clear. Publish a
+concise question with question:true as soon as missing contractor intent is known,
+then continue independent work in this same turn. Prefer one useful checkpoint
+after recording requirements and catalog matches over repeated statements of intent.
 requirements: {requirements:[{id,source_text,quantity,unit,specifications,missing_essentials}],constraints:{delivery_deadline,delivery_zone},budget_cap?}.
 Derive these from task text, not catalog IDs. Keep source wording. Date-only delivery
 means end of that day in the contractor's stated timezone; record that interpretation.
@@ -380,8 +392,9 @@ send: {id:<stable unique action ID>,type:inquiry|counter,run_id,request_revision
 vendor_id,message,previous_quote_id?,target_total?,currency?,items?}. Use current scope
 from snapshot. The message must state concrete requirements/quantities, delivery,
 necessary questions and your proposed numeric terms. JSON fields also preserved.
-Send a grouped inquiry, then stop this turn while waiting: new supplier replies
-wake this same session. Do not busy-poll or sleep. Do not repeat sent inquiries.
+Send the independently useful grouped inquiries for this step, then stop this turn
+while waiting: new supplier replies wake this same session. Do not busy-poll or
+sleep. Do not repeat sent inquiries.
 offer: {source_id,quote:<exact full supplier JSON object from received evidence>}.
 Do not edit supplier terms to make validation pass. Ask the supplier to correct omissions.
 decision: {proposal:{id,run_id,request_revision,requirement_id,product_id,
@@ -631,6 +644,7 @@ class Procurement:
                     persist()
                     comment(self.api, state, persist, 'source-changed-' + store.digest(source)[:12],
                         'The material request changed. I’ve paused supplier actions so the earlier quotes and approvals aren’t applied to the revised list.')
+                    notify_progress(self.api, state, persist, self.user_id)
                     continue
                 # Bind the sender and reply inbox for the life of this run.
                 # Legacy runs without a binding continue using personal mail.
@@ -645,7 +659,9 @@ class Procurement:
                     persist()
                     comment(self.api, state, persist, 'interrupted',
                         'My procurement turn was interrupted. The recorded supplier messages are preserved; I need to reconcile that work before continuing.')
+                    notify_progress(self.api, state, persist, self.user_id)
                     continue
+                notify_progress(self.api, state, persist, self.user_id)
                 if state.get('paused') or (not changed and state.get('phase') != 'ready'):
                     persist()
                     continue
@@ -668,6 +684,7 @@ class Procurement:
                     persist()
                     comment(self.api, state, persist, 'turn-' + str(snapshot['turn']), answer)
                     notify_pending_questions(self.api, state, persist)
+                    notify_progress(self.api, state, persist, self.user_id)
                     if blocker:
                         comment(self.api, state, persist, 'continuation-blocked-' + str(snapshot['turn']), blocker)
             except (BridgeError, ValueError, OSError) as error:
@@ -677,4 +694,5 @@ class Procurement:
                     persist()
                     comment(self.api, state, persist, 'error-' + str(snapshot['turn']),
                         'I hit an integration problem while working on the request. Existing quotes and messages are preserved; I haven’t placed any order.')
+                    notify_progress(self.api, state, persist, self.user_id)
             return  # One bounded Hermes task turn per poll; allow DMs between turns.

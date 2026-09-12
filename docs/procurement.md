@@ -44,6 +44,13 @@ Supplier mail remains the strict JSON envelope by default. The optional
 `TAKEOFF_SUPPLIER_MAIL_MESSAGE_FIRST=1` adds the model's readable message before
 that envelope only when the receiving supplier supports mixed-text parsing.
 
+Chip also sends a concise progress overview to the contractor DM: material and
+catalog counts, suppliers contacted and heard from, checked quotes, outstanding
+details or decisions, and the task link. These summaries come from persisted run
+state without another model call. They update on meaningful changes at most once
+per minute, with an immediate final update. Uncertain message delivery is
+reconciled before another overview is sent.
+
 Use the isolated credentials and runtime described in [Ambiguous setup](ambiguous.md).
 The ignored configuration is `.local/hermes/procurement/config.json`, resolved
 inside the container through `HERMES_HOME`. Its shape is:
