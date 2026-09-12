@@ -1,0 +1,237 @@
+#!/usr/bin/env python3
+"""Repo-local Hermes launcher. Docker is the host isolation boundary."""
+import getpass
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import uuid
+
+ROOT = Path(__file__).resolve().parents[1]
+STATE = ROOT / '.local' / 'hermes'
+PIN = ROOT / 'runtime' / 'hermes' / 'image.txt'
+IMAGE = 'nousresearch/hermes-agent:latest'
+BRIDGE_NAME = 'takeoff-' + hashlib.sha256(str(ROOT).encode()).hexdigest()[:12] + '-chat'
+
+
+def bridge_status(engine):
+    result = subprocess.run([*engine, 'inspect', BRIDGE_NAME + '-buyer',
+                             '--format', '{{.State.Status}}'], capture_output=True, text=True)
+    return result.stdout.strip() if result.returncode == 0 else 'stopped'
+
+
+def cleanup(engine, network):
+    for operation in (['rm', '-f', network + '-buyer'], ['rm', '-f', network + '-egress'],
+                      ['network', 'rm', network]):
+        subprocess.run([*engine, *operation], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def owner():
+    # A user-visible sudo shell may launch Docker, but the buyer must stay non-root.
+    uid = int(os.environ.get('SUDO_UID', ROOT.stat().st_uid)) if os.getuid() == 0 else os.getuid()
+    gid = int(os.environ.get('SUDO_GID', ROOT.stat().st_gid)) if os.getuid() == 0 else os.getgid()
+    if uid == 0:
+        raise SystemExit('Hermes requires a non-root repository owner or SUDO_UID.')
+    return uid, gid
+
+
+def preserve_owner(path):
+    if os.getuid() == 0:
+        os.chown(path, *owner(), follow_symlinks=False)
+
+
+def init():
+    # Refuse redirected state: all persistent runtime files must stay in this repo.
+    for path in (ROOT / '.local', STATE, STATE / 'home', STATE / 'workspace', STATE / 'skills'):
+        if path.is_symlink() or not path.resolve().is_relative_to(ROOT):
+            raise SystemExit(f'Refusing state outside repository: {path}')
+        path.mkdir(mode=0o700, parents=True, exist_ok=True)
+        preserve_owner(path)
+    config = STATE / 'config.yaml'
+    env_file = STATE / '.env'
+    for path in (config, env_file):
+        if path.is_symlink():
+            raise SystemExit(f'Refusing symlink: {path}')
+    soul = STATE / 'SOUL.md'
+    if soul.is_symlink():
+        raise SystemExit(f'Refusing symlink: {soul}')
+    for source in (ROOT / 'runtime/hermes/config.yaml', ROOT / 'runtime/hermes/SOUL.md', ROOT / '.env.example'):
+        if source.is_symlink() or not source.resolve().is_relative_to(ROOT):
+            raise SystemExit(f'Refusing template outside repository: {source}')
+    if not config.exists():
+        shutil.copyfile(ROOT / 'runtime/hermes/config.yaml', config)
+    if not env_file.exists():
+        shutil.copyfile(ROOT / '.env.example', env_file)
+    if not soul.exists():
+        shutil.copyfile(ROOT / 'runtime/hermes/SOUL.md', soul)
+    for path in (config, env_file, soul):
+        path.chmod(0o600)
+        preserve_owner(path)
+
+
+def validate_pin():
+    if PIN.is_symlink() or PIN.resolve().parent != ROOT / 'runtime' / 'hermes':
+        raise SystemExit('Refusing image pin outside runtime/hermes')
+
+
+def docker():
+    if not shutil.which('docker'):
+        raise SystemExit('Docker is required. No unsandboxed fallback is allowed.')
+    if subprocess.run(['docker', 'info'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+        return ['docker']
+    if not sys.stdin.isatty():
+        raise SystemExit('Docker needs authentication. Run this command in the Admin — Takeoff Docker Herdr pane.')
+    return ['sudo', 'docker']
+
+
+def run(args, background=False):
+    init()
+    uid, gid = owner()
+    engine = docker()
+    validate_pin()
+    if not PIN.exists():
+        raise SystemExit('Run scripts/hermes pull first to pin the official image digest.')
+    image = PIN.read_text().strip()
+    if not image.startswith('nousresearch/hermes-agent@sha256:'):
+        raise SystemExit('Invalid Hermes image pin')
+    if background and bridge_status(engine) == 'running':
+        print('Takeoff chat listener is already running.')
+        return 0
+    network = BRIDGE_NAME if background else 'takeoff-' + uuid.uuid4().hex[:12]
+    if background:
+        cleanup(engine, network)
+    proxy_name = network + '-egress'
+    buyer_name = network + '-buyer'
+    command = [*engine, 'run', '--rm', '--init', '--read-only',
+               '--name', buyer_name,
+               '--label', 'com.takeoff.runtime=hermes',
+               '--user', f'{uid}:{gid}',
+               '--cap-drop=ALL', '--security-opt=no-new-privileges',
+               '--pids-limit=256', '--memory=4g', '--cpus=4',
+               '--network', network, '--dns=127.0.0.1', '--workdir=/opt/data/workspace',
+               '--mount', f'type=bind,src={ROOT},dst=/workspace,readonly',
+               '--mount', f'type=bind,src={STATE},dst=/workspace/.local/hermes',
+               '--mount', f'type=bind,src={STATE},dst=/opt/data',
+               '--tmpfs', '/tmp:rw,nosuid,nodev,size=512m,mode=1777',
+               '--env', 'TAKEOFF_SANDBOX=1',
+               '--env', 'HERMES_HOME=/workspace/.local/hermes',
+               '--env', 'HOME=/workspace/.local/hermes/home',
+               '--env', 'HERMES_WRITE_SAFE_ROOT=/workspace/.local/hermes',
+               '--env', 'HERMES_DISABLE_LAZY_INSTALLS=1',
+               '--env', 'PYTHONDONTWRITEBYTECODE=1',
+               '--env', 'NODE_USE_ENV_PROXY=1',
+               '--env', 'XDG_CACHE_HOME=/workspace/.local/hermes/home/.cache',
+               '--env', 'PATH=/workspace/integrations/ambiguous/node_modules/.bin:/opt/hermes/.venv/bin:/usr/local/bin:/usr/bin:/bin',
+               '--entrypoint', '/opt/hermes/.venv/bin/python']
+    for name in ('takeoff-intake', 'takeoff-source-offers', 'takeoff-negotiate'):
+        source = ROOT / '.agents/skills' / name
+        if (source / 'SKILL.md').is_file():
+            command += ['--mount', f'type=bind,src={source},dst=/workspace/.local/hermes/skills/{name},readonly']
+    if background:
+        command += ['--detach']
+    elif sys.stdin.isatty() and sys.stdout.isatty():
+        command += ['-it']
+    else:
+        command += ['-i']
+    keep_running = False
+    try:
+        subprocess.run([*engine, 'network', 'create', '--internal',
+                        '--opt', 'com.docker.network.bridge.gateway_mode_ipv4=isolated',
+                        '--label', 'com.takeoff.runtime=hermes', network],
+                       check=True, stdout=subprocess.DEVNULL)
+        subprocess.run([*engine, 'run', '--detach', '--rm', '--read-only',
+                        '--name', proxy_name, '--network=bridge',
+                        '--label', 'com.takeoff.runtime=hermes',
+                        '--user', f'{uid}:{gid}',
+                        '--cap-drop=ALL', '--security-opt=no-new-privileges',
+                        '--pids-limit=64', '--memory=128m', '--cpus=1',
+                        '--mount', f'type=bind,src={ROOT / "runtime/hermes/egress.py"},dst=/egress.py,readonly',
+                        '--tmpfs', '/opt/data:ro,size=1m',
+                        '--entrypoint', '/opt/hermes/.venv/bin/python', image, '/egress.py'],
+                       check=True, stdout=subprocess.DEVNULL)
+        subprocess.run([*engine, 'network', 'connect', network, proxy_name], check=True)
+        info = json.loads(subprocess.check_output(
+            [*engine, 'inspect', proxy_name, '--format', '{{json .NetworkSettings.Networks}}'], text=True))
+        proxy = f'http://{info[network]["IPAddress"]}:3128'
+        command += ['--env', f'HTTPS_PROXY={proxy}', '--env', f'HTTP_PROXY={proxy}',
+                    image, '/workspace/runtime/hermes/entry.py', *args]
+        result = subprocess.run(command, stdout=subprocess.DEVNULL if background else None)
+        keep_running = background and result.returncode == 0
+        if keep_running:
+            print('Takeoff chat listener started. Use scripts/hermes bridge-status to verify it.')
+        return result.returncode
+    finally:
+        if not keep_running:
+            cleanup(engine, network)
+
+
+def credentials():
+    init()
+    if not sys.stdin.isatty():
+        raise SystemExit('Enter keys directly in a visible terminal, never in chat or command arguments.')
+    target = STATE / '.env'
+    lines = target.read_text().splitlines()
+    for name, label in [('OPENAI_API_KEY', 'New hackathon OpenAI API key'),
+                        ('AMBI_API_TOKEN', 'takeoffAI buyer agent API token')]:
+        value = getpass.getpass(f'{label} (blank keeps existing): ').strip()
+        if value:
+            if any(c in value for c in '\r\n\x00'):
+                raise SystemExit('Invalid credential format')
+            lines = [line for line in lines if not line.startswith(name + '=')]
+            lines.append(f'{name}={json.dumps(value)}')
+    target.write_text('\n'.join(lines) + '\n')
+    target.chmod(0o600)
+    preserve_owner(target)
+    print('Credentials saved to .local/hermes/.env; values were not displayed.')
+
+
+def main():
+    args = sys.argv[1:]
+    action = args[0] if args else 'chat'
+    if action in ('help', '--help', '-h'):
+        print('scripts/hermes init | pull | credentials | smoke | network-smoke | bridge-start | bridge-stop | bridge-status | ambi <args> | exec <command> | <Hermes CLI args>')
+        return 0
+    if action == 'init':
+        init()
+        print('Initialized isolated state at .local/hermes (existing configuration preserved).')
+        return 0
+    if action == 'credentials':
+        credentials()
+        return 0
+    if action == 'pull':
+        init()
+        validate_pin()
+        engine = docker()
+        subprocess.run([*engine, 'pull', IMAGE], check=True)
+        result = subprocess.check_output([*engine, 'image', 'inspect', IMAGE, '--format', '{{json .RepoDigests}}'], text=True)
+        digest = next(ref for ref in json.loads(result) if ref.startswith('nousresearch/hermes-agent@sha256:'))
+        PIN.write_text(digest + '\n')
+        preserve_owner(PIN)
+        print(f'Pinned {digest}')
+        return 0
+    if action == 'smoke':
+        return run(['exec', '/opt/hermes/.venv/bin/python', '/workspace/runtime/hermes/smoke.py'])
+    if action == 'network-smoke':
+        return run(['exec', '/opt/hermes/.venv/bin/python', '/workspace/runtime/hermes/network_smoke.py'])
+    if action == 'ambi':
+        return run(['exec', 'node', '/workspace/integrations/ambiguous/run.mjs', *args[1:]])
+    if action == 'bridge-start':
+        return run(['exec', '/opt/hermes/.venv/bin/python', '-u', '/workspace/integrations/ambiguous/bridge.py'], background=True)
+    if action == 'bridge-status':
+        print('Takeoff chat listener: ' + bridge_status(docker()))
+        return 0
+    if action == 'bridge-stop':
+        cleanup(docker(), BRIDGE_NAME)
+        print('Takeoff chat listener stopped; runtime network removed.')
+        return 0
+    return run(args or ['chat'])
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except (subprocess.CalledProcessError, KeyboardInterrupt) as error:
+        sys.exit(error.returncode if isinstance(error, subprocess.CalledProcessError) else 130)

@@ -1,0 +1,186 @@
+{
+  "schema_version": "0.1-proposed",
+  "request_id": "request-001",
+  "task_id": "fixture-task-001",
+  "run_id": "demo-interior-001",
+  "request_revision": 1,
+  "status": "proposed_demo_input",
+  "source": {
+    "mode": "fixture",
+    "reference": "examples/procurement/material-request.json",
+    "description": "Invented starter request for team review; not an actual contractor task or a finalized material schedule."
+  },
+  "title": "Proposed interior painting and finishing package",
+  "workflow": {
+    "entry_mode": "concrete_material_request",
+    "clarification_policy": "Ask only for missing essentials needed to perform the current task; do not require a priority interview before starting.",
+    "mandatory_interview": false
+  },
+  "delivery": {
+    "is_synthetic": true,
+    "site_label": "Demo interior refresh",
+    "city": "San Francisco",
+    "region": "CA",
+    "postal_code": "94103",
+    "country": "US",
+    "street_address": null,
+    "pricing_location_note": "Synthetic delivery zone only. No real jobsite or shipment is authorized.",
+    "timezone": "America/Los_Angeles",
+    "needed_by": "2026-09-18T17:00:00-07:00"
+  },
+  "budget": {
+    "amount": 1500,
+    "currency": "USD",
+    "scope": "expanded_package",
+    "includes": ["materials", "delivery", "tax", "mandatory_fees"],
+    "is_synthetic": true
+  },
+  "preferences": [
+    "Among packages satisfying the approved requirements, prefer lower total payable.",
+    "If total payable and delivery are otherwise equivalent, prefer fewer supplier deliveries.",
+    "No preferred brand or supplier is specified."
+  ],
+  "authority": {
+    "effective_only_when_adopted_in_contractor_task": true,
+    "supplier_inquiries": true,
+    "supplier_negotiation": true,
+    "task_related_supplier_messages": true,
+    "publish_progress_and_recommendation_to_originating_task": true,
+    "place_orders": false,
+    "approve_substitutions": false,
+    "increase_budget": false,
+    "relax_delivery_deadline": false,
+    "note": "Routine inquiries and negotiation within the adopted task are delegated. Orders and changes to specifications, budget, or delivery require separate explicit contractor authority. Loading this proposed fixture alone grants no permission for live messages."
+  },
+  "execution_slices": {
+    "first_live_path": {
+      "slice_id": "slice-01",
+      "requirement_ids": ["req-01"],
+      "budget": {
+        "amount": 400,
+        "currency": "USD",
+        "includes": ["materials", "delivery", "tax", "mandatory_fees"],
+        "is_synthetic": true
+      },
+      "completion_scope": "Six matching req-01 paint cans only; does not complete the expanded package."
+    },
+    "expanded_package": {
+      "slice_id": "slice-02",
+      "requirement_ids": ["req-01", "req-02", "req-03", "req-04", "req-05", "req-06", "req-07", "req-08"],
+      "completion_scope": "All eight requirements under the full-package budget and approved constraints."
+    }
+  },
+  "requirements": [
+    {
+      "requirement_id": "req-01",
+      "description": "Interior wall paint",
+      "quantity": 6,
+      "unit": "can",
+      "hard_specs": [
+        "Sealed can containing 1 US gallon (128 US fluid ounces)",
+        "Water-based paint labeled for interior walls",
+        "Untinted white",
+        "Eggshell sheen"
+      ],
+      "introduced_in": "first_live_path"
+    },
+    {
+      "requirement_id": "req-02",
+      "description": "Interior trim paint",
+      "quantity": 2,
+      "unit": "each",
+      "hard_specs": [
+        "Sealed can containing 1 US gallon (128 US fluid ounces)",
+        "Water-based paint labeled for interior trim",
+        "Untinted white",
+        "Semi-gloss sheen"
+      ],
+      "introduced_in": "expanded_package"
+    },
+    {
+      "requirement_id": "req-03",
+      "description": "Paintable interior trim caulk",
+      "quantity": 12,
+      "unit": "each",
+      "hard_specs": [
+        "Individual cartridge containing 10.1 US fluid ounces",
+        "White acrylic-latex caulk",
+        "Labeled paintable",
+        "Labeled for interior trim use"
+      ],
+      "introduced_in": "expanded_package"
+    },
+    {
+      "requirement_id": "req-04",
+      "description": "Painter's masking tape",
+      "quantity": 12,
+      "unit": "each",
+      "hard_specs": [
+        "One roll measuring 1.88 inches wide and 60 yards long",
+        "Paper-backed painter's masking tape",
+        "Labeled for indoor painting use"
+      ],
+      "introduced_in": "expanded_package"
+    },
+    {
+      "requirement_id": "req-05",
+      "description": "Paint roller covers",
+      "quantity": 8,
+      "unit": "each",
+      "hard_specs": [
+        "Individual roller cover, 9 inches long",
+        "3/8-inch nap",
+        "Synthetic fiber cover",
+        "Labeled suitable for water-based paint"
+      ],
+      "introduced_in": "expanded_package"
+    },
+    {
+      "requirement_id": "req-06",
+      "description": "Angled paint brushes",
+      "quantity": 4,
+      "unit": "each",
+      "hard_specs": [
+        "Individual brush, 2 inches wide",
+        "Angled brush edge",
+        "Synthetic bristles",
+        "Labeled suitable for water-based paint"
+      ],
+      "introduced_in": "expanded_package"
+    },
+    {
+      "requirement_id": "req-07",
+      "description": "Finishing sandpaper sheets",
+      "quantity": 20,
+      "unit": "sheet",
+      "hard_specs": [
+        "Individual sheet measuring 9 by 11 inches",
+        "120 grit",
+        "Paper backing",
+        "Labeled for dry sanding"
+      ],
+      "introduced_in": "expanded_package"
+    },
+    {
+      "requirement_id": "req-08",
+      "description": "Interior lightweight spackling compound",
+      "quantity": 4,
+      "unit": "each",
+      "hard_specs": [
+        "Sealed tub containing 32 US fluid ounces",
+        "White lightweight spackling compound",
+        "Labeled for interior nail-hole repair",
+        "Labeled paintable after drying"
+      ],
+      "introduced_in": "expanded_package"
+    }
+  ],
+  "tradeoff_opportunity": {
+    "requirement_ids": ["req-01"],
+    "kind": "delivery_for_price",
+    "proposal": "Ask whether the same matching paint can be offered on better total terms if delivery occurs after the current deadline, up to the exploration date below.",
+    "latest_date_to_explore": "2026-09-21T17:00:00-07:00",
+    "contractor_approval_required": true,
+    "note": "This permits an inquiry about an alternative, not acceptance of late delivery. Actual supplier offers determine whether a meaningful choice exists. No discount, savings threshold, contractor answer, or winning supplier is predetermined."
+  }
+}
