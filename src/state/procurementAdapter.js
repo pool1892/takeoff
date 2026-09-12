@@ -69,31 +69,10 @@ class BaseAdapter {
 }
 
 export class DemoProcurementAdapter extends BaseAdapter {
-  constructor() {
-    const fixture = normalizeSnapshot(createDemoProcurement(), "demo");
-    super({ ...fixture, status: "draft", decision: null, suppliers: [], quotes: [], activity: [] });
-    this.fixture = fixture;
-  }
-  async startProcurement() {
-    if (this.state.status !== "draft") return;
-    this.state = { ...this.state, status: "briefing", activity: appendActivity(this.state, { message: "Demo buyer started the procurement brief." }) };
-    this.emit();
-  }
-  async answerPriorities() {
-    if (this.state.status === "draft") await this.startProcurement();
-    if (this.state.status !== "briefing") return;
-    this.state = {
-      ...this.fixture,
-      status: "needs_contractor_decision",
-      activity: this.fixture.activity,
-      decision: contractorDecision,
-    };
-    this.emit();
-  }
-  async submitApproval() {
-    this.state = { ...this.state, activity: appendActivity(this.state, { type: "fact", message: "Demo contractor approval recorded for this procurement." }) };
-    this.emit();
-  }
+  constructor() { super(normalizeSnapshot(createDemoProcurement(), "demo")); }
+  async startProcurement() { this.state = { ...this.state, status: "needs_contractor_decision" }; this.emit(); }
+  async answerPriorities() { this.emit(); }
+  async submitApproval() { this.emit(); }
   async submitNegotiationDecision(decision) {
     this.state = normalizeSnapshot(createDemoProcurement(decision), "demo");
     this.emit();

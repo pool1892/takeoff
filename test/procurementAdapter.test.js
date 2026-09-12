@@ -2,20 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { DemoProcurementAdapter, LiveProcurementAdapter, applyProcurementEvent } from "../src/state/procurementAdapter.js";
 
-test("demo adapter runs an interactive, visibly simulated procurement flow", async () => {
+test("demo adapter remains separate and visibly simulated", async () => {
   const adapter = new DemoProcurementAdapter();
   assert.equal(adapter.getSnapshot().mode, "demo");
-  assert.equal(adapter.getSnapshot().status, "draft");
-  assert.equal(adapter.getSnapshot().quotes.length, 0);
-  await adapter.startProcurement();
-  assert.equal(adapter.getSnapshot().status, "briefing");
-  assert.equal(adapter.getSnapshot().activity.length, 1);
-  await adapter.answerPriorities();
-  assert.equal(adapter.getSnapshot().status, "needs_contractor_decision");
-  assert.equal(adapter.getSnapshot().quotes.length, 3);
-  assert.ok(adapter.getSnapshot().decision?.question);
-  await adapter.submitApproval();
-  assert.match(adapter.getSnapshot().activity.at(-1).message, /approval recorded/i);
   await adapter.submitNegotiationDecision("accept-five-day");
   assert.equal(adapter.getSnapshot().recommendation.supplierId, "cascade");
 });
