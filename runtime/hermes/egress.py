@@ -11,7 +11,8 @@ import threading
 import time
 
 
-ALLOWED_HOSTS = frozenset({'api.openai.com', 'api.ambiguous.ai', 'app.ambiguous.ai'})
+ALLOWED_HOSTS = frozenset({'api.openai.com', 'api.ambiguous.ai', 'app.ambiguous.ai',
+                           'multiply-cameo-clash.ngrok-free.dev'})
 PORT = 3128
 HEADER_LIMIT = 32768
 HEADER_TIMEOUT = 10

@@ -44,7 +44,9 @@ personal Hermes credentials or an OpenRouter account.
 after the command returns. `bridge-stop` removes both containers and that network;
 it preserves local conversation state. No system startup service is installed.
 The chat bridge connects contractor direct messages in Ambiguous to actual Hermes
-turns. It does not yet autonomously process assigned procurement tasks.
+turns. It also processes explicitly configured assigned procurement tasks through
+the [procurement listener and tools](procurement.md); that path retains one native
+Hermes session per task and resumes it on supplier replies or contractor comments.
 
 ## Isolation boundary
 
@@ -62,7 +64,8 @@ and host network namespace are not mounted or shared. No ports are published.
 The buyer uses an internal Docker network with `gateway_mode_ipv4=isolated`, so
 even a host service listening on every address is not available via a bridge
 gateway. It has no default route. A separate unprivileged proxy allows HTTPS only
-to `api.openai.com`, `api.ambiguous.ai`, and `app.ambiguous.ai`, rejecting private,
+to `api.openai.com`, `api.ambiguous.ai`, `app.ambiguous.ai`, and the agreed supplier
+host `multiply-cameo-clash.ngrok-free.dev`, rejecting private,
 loopback, and link-local DNS results. TLS stays end to end; the proxy has no
 credentials or repo/state mount. Each launch creates and removes its own proxy
 and private network. This requires Docker Engine 28 or later and fails closed on
