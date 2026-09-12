@@ -53,8 +53,11 @@ The first Chip emails reached the supplier and received responses, but their bod
 was empty at the recipient: the buyer sent `body_text` instead of `body_markdown`,
 and the supplier inbox listing also required full-message hydration. Both adapters
 are corrected. Those attempts produced catalog responses rather than issued quotes
-and remain in the evidence. The full task →
-remote quote → contractor decision → recommendation path is still under verification.
+and remain in the evidence. The corrected live Chip request produced supplier quote
+`quote_d7479895425441aa89b8ddb47946ddcc`: USD 2,300 delivered for the first three
+material lines, issued at 21:32 UTC and sent back through Ambiguous. Buyer receipt
+and a counteroffer are being checked. The full task → remote quote → contractor
+decision → recommendation path is still under verification.
 Full 25-line completion, live phone operation, human comparison, and recorded demo
 playback are separate milestones. See [the integration handoff](suppliers/integration.md)
 for the current endpoint and protocol.
