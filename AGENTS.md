@@ -5,6 +5,42 @@ decisions, use coding agents in parallel for bounded independent work, and get r
 integrations working early. Optimize for an excellent working demonstration, not a
 production platform or a perfect process. Do the authorized work; do not stop at plans.
 
+## Today's deadline and implementation checkpoints
+
+All times below are **September 12, 2026, America/Los_Angeles (Pacific local time)**.
+Christoph set a **4:30 pm submission deadline** and wants the working demo ready
+by **4:00 pm**, leaving the last half hour for fixes, recording, and submission.
+At roughly 2:00 pm this leaves two hours of build time; check the actual clock
+before taking on more work. These checkpoints are targets, not claims of completion.
+
+| Time | Target |
+|---|---|
+| **2:10 pm** | Agree the shared request/data boundaries and reconcile the archived planning context. The implementation agents choose the exact components and first live slice together. |
+| **2:45 pm** | One actual Ambiguous task → remote supplier offer → explained recommendation works through Hermes. |
+| **3:20 pm** | Expand to the 25-component house-material package, agent-chosen negotiation, and one meaningful substitution decision. |
+| **3:30 pm** | Stop adding features. Verify approval/rejection, missing information, and restart behavior; capture the actual run. |
+| **4:00 pm** | Working demo and captured run ready. |
+| **4:00–4:30 pm** | Buffer for fixes, recording/packaging, and submission; no new feature work. |
+| **4:30 pm** | Submission deadline. |
+
+Run independent buyer lanes in parallel: discovery/product mapping; quote and
+package calculations; model-directed negotiation and contractor approvals. The
+main implementer owns Hermes/Ambiguous integration, shared interfaces, persistent
+runs, and supplier coordination. Use Astra/high subagents with Fast/priority where
+available, with separate file ownership. Supplier and UX owners work in parallel
+on their respective computers; integrate a small real path before full polish.
+
+Keep discovery and product selection, genuine buyer/vendor strategic decisions,
+and a meaningful substitution approval in the core. Website, email, and agent-to-agent
+supplier channels remain the agreed core; changes to that scope require a team
+decision. Phone, advanced controls, and broad evaluation must not delay the live
+path. Use recorded runs for reliable playback rather than scripting strategy.
+
+The first reachable supplier channel and buyer-visible catalog are critical
+external dependencies. Surface a missed checkpoint or missing handoff promptly,
+continue independent work, and adapt the remaining work to the time left. Never
+report a fixture or unconnected component as a completed live milestone.
+
 ## Read first, in both harnesses
 
 - This file is the canonical project instruction file. `CLAUDE.md` is a symlink to it.
@@ -16,6 +52,9 @@ production platform or a perfect process. Do the authorized work; do not stop at
   symlinks to those same directories. Edit the canonical source, never make copies.
 - Skills are discovered by name/description and loaded when used. Essential context
   belongs here so neither harness depends on selecting a skill to know the architecture.
+- Historical conversations are indexed in `transcripts/README.md`. Use them to
+  recover intent, preserving chronology; current explicit decisions supersede old
+  proposals, module plans, counts, providers, and historical completion claims.
 
 ## The product and story
 
@@ -27,10 +66,24 @@ The demonstration starts with a contractor task in Ambiguous, shows product disc
 and purposeful negotiation with remote suppliers, brings back one consequential human
 decision, and finishes with an understandable buying recommendation in Ambiguous.
 
-Use a small representative material package. Eight requirements and three core supplier
-encounters are a useful starting scenario, not a complete bill of materials for a house.
+Use **25 representative house-material requirements** and three core supplier
+encounters as the full-demo target, not a complete bill of materials for a house.
+Expand beyond 25 only if public catalog coverage and the deadline permit. The exact
+components and first live slice are delegated to the buyer/supplier implementation
+agents together. An early small slice is integration progress, not completion of
+the full package. The contractor's list should
+contain realistic shorthand and ambiguity that the buyer resolves against available
+supply. Preserve the source; do not replace discovery with preassigned product IDs.
+The existing UX fixture does not determine the procurement scenario.
 The team chooses the concrete data. Do not claim arbitrary architectural plans can be
 converted into construction-ready specifications.
+
+Make the procurement workload visible: requirements mapped, candidate alternatives
+checked, pack conversions, supplier exchanges, and actual contractor interventions.
+Group inquiries and negotiations by supplier/package rather than creating 25 separate
+conversations. Record real elapsed time and human effort; line count alone is not a
+measured time-saving claim. Ehsan owns the edited video and final presentation, so
+hand over useful captured runs and evidence early enough to finish them by submission.
 
 ## Current architecture — authoritative team decisions
 
@@ -50,9 +103,18 @@ converted into construction-ready specifications.
   commercial state. The buyer sees only information offered through the channel.
 - **Phone:** fully sketched stretch, not a core dependency. A live remote supplier
   call may join the same workflow. The core material package must work without it.
-- **Strategy:** partly scripted and bounded. Author a small scenario and action menu;
-  let actual offers, constraints, and contractor answers determine the decisions and
-  result. Do not hardcode a winner or invent a competing offer to improve the story.
+- **Discovery before negotiation:** start from a contractor's takeoff or material
+  sheet, derive requirements, discover purchasable products and compatible alternatives,
+  select supported candidates, and check availability before bargaining over them.
+  Include one meaningful product-substitution decision; clarification of missing
+  information alone does not demonstrate approval of a changed requirement.
+- **Strategy:** give both agents actual decisions. The buyer chooses questions,
+  counteroffer prices, bundles, negotiation tactics, and when to stop. The vendor
+  agent chooses concessions and what information to disclose within its own private
+  commercial limits. Code enforces inventory, arithmetic, approved product constraints,
+  permissions, and execution limits; it must not predetermine tactical moves, prices,
+  concessions, disclosures, or the winner. Use recorded runs for reliable playback.
+  Never invent a competing offer to improve the story.
 - **Explanation:** the selected package, price, delivery, tradeoffs, rejected options,
   and supporting quotes/approvals must be inspectable.
 
@@ -78,6 +140,13 @@ their agency: agree boundaries and examples, and do not subdivide or redesign th
 work without coordinating. Human issue assignees remain accountable even when coding
 agents execute subtasks. Keep each agent's write ownership clear and preserve others'
 changes; do not reset, clean, or overwrite work to simplify integration.
+
+During today's hackathon, check the implementation AgentMail inbox
+**christoph-6932@agentmail.to** about once a minute while work is active, through
+the connector or a bounded read-only watcher. Bring supplier-agent replies into
+the active integration work promptly. This is coding-agent coordination, separate
+from Chip's Ambiguous procurement identity. If all coding slots are needed, the
+main implementer takes over polling rather than reserving a worker solely to wait.
 
 ## How to work at hackathon pace
 

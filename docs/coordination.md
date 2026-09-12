@@ -25,6 +25,13 @@ buyer fixture; provide public endpoint/address references and shareable examples
   they have not passed an end-to-end supplier run.
 - The accepted starting flow is a concrete request, with questions only for
   missing essentials. A priority interview is not a prerequisite for discovery.
+- Product discovery and selection come before negotiation: material sheet →
+  requirements → purchasable SKUs and compatible alternatives → availability.
+- Buyer and vendor models choose strategy, including numeric counteroffers,
+  bundles, concessions, and disclosures. Code validates constraints/arithmetic;
+  it does not schedule their moves. Include one meaningful substitution decision.
+- Target a working demo by **16:00 America/Los_Angeles on September 12**; reserve
+  the remaining half hour for fixes/capture before the **16:30 submission**.
 
 ## First supplier handoff
 
@@ -48,13 +55,22 @@ transport yet; agree and test the exact channel rather than assuming one exists.
 
 ## Scenario alignment still required
 
-`examples/procurement/` contains proposed synthetic painting-supplies inputs and
-linked offer/decision examples for buyer integration. The separate
-`src/demoScenario.js` fixture on main presents a simulated framing-lumber UX
-walkthrough. These are development examples, not one agreed scenario or evidence
-of real negotiations. Choose the common material and delivery tradeoff with Tapan
-and Ehsan through [#1](https://github.com/pool1892/takeoff/issues/1) before the first
-integrated run. The owners can continue independent implementation meanwhile.
+Christoph's current full-demo target is 25 representative house components, with
+realistic ambiguity in the contractor's list that the buyer maps to available
+supply. Ignore the UX fixture when choosing this procurement scenario. The
+[house request proposal](../examples/procurement/house-discovery.md) supplies a
+natural source message and mapping cases; its exact quantities/specifications are
+still proposed synthetic data. Christoph delegated the exact component choices
+and first live slice to the implementation agents together. Agree public catalog
+coverage and the actual substitution tradeoff with Tapan through
+[#1](https://github.com/pool1892/takeoff/issues/1), without using the UX fixture as
+the scenario authority.
+
+The earlier painting JSON files remain useful arithmetic fixtures. The separate
+`src/demoScenario.js` framing-lumber fixture is a UX simulation. Neither is the
+current 25-component scenario or evidence of real negotiations. Supplier and
+buyer work can proceed in parallel from the natural source and shared product/
+offer fields; don't preassign SKUs or a winning supplier to the contractor input.
 
 Ehsan owns the actual Ambiguous task, progress, contractor-decision, and result
 presentation. Keep the corresponding references and input/output examples small

@@ -21,12 +21,15 @@ delivery before resending.
 
 ## Choose a supported move and know when to stop
 
-Use the current task/scenario's action menu and configured turn, time, and
-model-call limits. Keep remaining limits, unresolved questions, proposed moves,
-confirmed offer versions, and the eventual stopping reason inspectable. The
-proposed three-wave demo is not a universal or already agreed limit.
+Choose the questions, numeric counteroffers, bundle composition, tactics, and
+stopping decision yourself from the observed situation. The available tools define
+what can be executed, not a fixed policy for which move or price to choose. Code
+checks inventory, arithmetic, applicable authority/product constraints, and
+configured turn, time, and model-call limits. Keep proposed moves, evidence,
+remaining limits, and the eventual stopping reason inspectable. Do not use a
+fixed concession schedule or a scripted sequence to determine strategy.
 
-Choose a short action plan from the supported opportunities:
+Possible moves include:
 
 - Clarify a product, quantity/unit, availability, or commercial condition.
 - Request improvement against a genuinely comparable confirmed alternative.
