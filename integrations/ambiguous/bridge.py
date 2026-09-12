@@ -283,10 +283,13 @@ def main():
         if identity.get('id') != user_id or identity.get('workspace_id') != workspace_id or identity.get('type') != 'agent':
             raise BridgeError('Credential does not match configured Takeoff agent')
         bridge = Bridge(api, args.state_dir / 'state.json', user_id)
+        from procurement import Procurement
+        procurement = Procurement(api, user_id)
         print('Takeoff Hermes DM bridge ready', flush=True)
         while True:
             try:
                 bridge.poll()
+                procurement.poll()
             except BridgeError as error:
                 print(str(error), file=sys.stderr, flush=True)
                 if args.once:

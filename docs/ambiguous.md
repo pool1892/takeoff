@@ -91,6 +91,12 @@ the buyer agent as the key's owner is a separate requirement from selecting scop
 
 ## Hermes task intake
 
+The bridge now includes an assigned-task listener with a private explicit task
+allowlist, supplier-mail intake, durable tools, and native Hermes session resume.
+See [configuration and recovery](procurement.md). An actual three-line integration
+task has reached the remote supplier and received a reply; completing the buying
+recommendation and full25-line journey remains separate verification.
+
 `scripts/hermes ambi poll` calls the CLI's actual
 `notifications poll --format hermes` command with expected user/workspace IDs. It
 returns complete unread events, `has_more`, `next_cursor`, and `wakeAgent`; it does

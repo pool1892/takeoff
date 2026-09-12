@@ -12,12 +12,29 @@ current negotiation state. Keep private working records under
 questions, and results in the originating buyer Ambiguous task. Supplier-private
 economics are not buyer inputs.
 
-Use `node /workspace/integrations/ambiguous/run.mjs catalog` for the exact live
-operations and flags, then use that wrapper for Ambiguous actions. Credentials
-establish identity, not authority. Send supplier inquiries/counters only within
-the contractor's delegated scope and to the agreed counterpart. Routine
-authorized bargaining needs no repeated approval. Reconcile uncertain message
-delivery before resending.
+Inspect the supported procurement commands first:
+
+```bash
+python /workspace/buyer/cli.py --help
+python /workspace/buyer/cli.py --task-id <task-UUID> snapshot
+```
+
+Use `python /workspace/buyer/cli.py --task-id <task-UUID> <command> --input
+<JSON-file>` for supported commands that take structured input. The integration
+provides `requirements`, `catalog`, `assess`, `send`, `offer`, `decision`, `plan`,
+and `publish`; consult each command's help for its current input shape. Keep
+input files inside this task's run directory. The supplier's remote `run_id`,
+the contractor task UUID, and message/source IDs are distinct; obtain them from
+the current snapshot rather than inventing or substituting one for another.
+
+Use `send` for supplier inquiries and counters. It validates the action against
+the saved run, current quotes, authority, and configured destinations before
+using the Ambiguous email transport. Do not bypass it with raw Ambiguous mail
+commands. Credentials establish identity, not authority. Routine bargaining
+under the actual task's delegated scope needs no repeated approval. Preserve the
+action ID and reconcile uncertain delivery before retrying; a fresh ID is not a
+way to repeat an uncertain send. No supplier acceptance or order command is part
+of this workflow, including acceptance of a simulated commercial commitment.
 
 ## Choose a supported move and know when to stop
 
@@ -45,6 +62,15 @@ targets and priorities out of supplier messages unless their disclosure is
 authorized and useful. Never invent a competing offer, supplier concession, or
 promised order to improve bargaining pressure.
 
+Your structured action states the numeric terms you chose, its purpose, current
+`run_id`/`request_revision`, supplier, immutable action ID, and the previous quote
+ID when countering. Cite real competing quote IDs when using competing terms;
+include matching quantities, units, currency, and confirmed package conditions.
+The validator rejects unknown/stale evidence, nonfinite or nonpositive proposed
+money/quantities, unauthorized destinations, and an explicit hard-budget breach.
+It does not choose a counteroffer for you. A validation failure calls for a
+corrected evidenced proposal or a stop, not a bypass.
+
 Let actual replies change the next action and recompute package opportunities
 when valid terms change. A proposed counter is not a confirmed saving. Stop at
 the applicable limit, a final supplier response, lack of a useful supported move,
@@ -70,6 +96,19 @@ permission, and no answer retains the original requirement unless an applicable
 default was already authorized. Publish how the actual answer changed candidate
 eligibility, later negotiation, or selection.
 
+Use `decision` to publish an exact task-bound proposal before waiting for the
+contractor. Include the requirement and product, exact changed attributes, the
+current request revision, and either the current quote ID/revision or current
+candidate ID/product revision. A product-substitution decision is required in
+the full house-material demonstration; a missing-information clarification does
+not satisfy it. The integration retrieves the actual contractor's comment and
+validates its immutable source ID, author, timestamp, explicit approve/reject
+choice, and exact proposal scope. Do not fabricate that source object or write
+a `validated` approval yourself. Resolving a thread is not approval. Duplicate,
+stale, edited, or unanswered records grant no additional authority. Conditional
+answers need clarification into a supported concrete proposal; the current
+helper accepts only explicit approval or rejection of the exact terms.
+
 ## Recommend a package the evidence supports
 
 Use deterministic calculations to compare complete packages under the current
@@ -79,6 +118,13 @@ mutually exclusive conditions together. Check totals and bundle-versus-split
 costs against the saved offers. An incompatible or incomplete cheap plan cannot
 win. If no complete feasible plan exists, identify the missing offer or required
 decision and report the result as incomplete.
+
+Use `plan` for the deterministic checks and calculations, then `publish` for the
+contractor result. You select the package to evaluate; the tools check the
+recorded evidence and arithmetic. Expand toward 25 representative house-material
+requirements when the active task adopts that scope, grouping exchanges by
+supplier/package. Never claim that a small integration slice fulfills the whole
+task or that 25 lines form a construction-ready bill of materials.
 
 Publish the recommendation and supplier-by-supplier draft purchase plan in
 Ambiguous. State what to buy, supplier, quantities, total payable, delivery,

@@ -103,6 +103,11 @@ hand over useful captured runs and evidence early enough to finish them by submi
   commercial state. The buyer sees only information offered through the channel.
 - **Phone:** fully sketched stretch, not a core dependency. A live remote supplier
   call may join the same workflow. The core material package must work without it.
+  Christoph delegated the optional buyer call adapter to Fable in OMP, owning
+  `integrations/voice/` and `docs/voice-handoff.md`. Coordinate through its Herdr
+  thread; keep it independent of the three core buyer coding lanes. It runs
+  inside the isolated Hermes environment and reuses the supplier's public audio
+  contract; do not start a duplicate voice implementation.
 - **Discovery before negotiation:** start from a contractor's takeoff or material
   sheet, derive requirements, discover purchasable products and compatible alternatives,
   select supported candidates, and check availability before bargaining over them.
@@ -147,6 +152,13 @@ the connector or a bounded read-only watcher. Bring supplier-agent replies into
 the active integration work promptly. This is coding-agent coordination, separate
 from Chip's Ambiguous procurement identity. If all coding slots are needed, the
 main implementer takes over polling rather than reserving a worker solely to wait.
+
+Christoph also requests a GitHub progress audit about every **10 minutes** through
+the submission deadline. Check all issues and current PRs, update stale progress
+using verified evidence, and avoid repetitive comments when nothing changed.
+Distinguish implemented/tested code, live integration, and completed demo outcomes.
+The main implementer owns Git commits and pushes of coherent tested state; audit
+workers notify the main implementer rather than racing concurrent commits/pushes.
 
 ## How to work at hackathon pace
 

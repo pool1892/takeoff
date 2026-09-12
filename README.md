@@ -8,8 +8,9 @@ tradeoffs, and returns a recommendation the contractor can inspect.
 
 This is our September 12, 2026 hackathon project. The repository contains the
 isolated Hermes buyer runtime with working Ambiguous chat, plus a resettable
-supplier market with a website and Ambiguous communication adapters. The complete
-procurement journey is being integrated through the GitHub issues.
+supplier market with a website and Ambiguous communication adapters. Procurement
+tools and assigned-task transport are implemented; the first live
+supplier journey is being exercised through the GitHub issues.
 
 ## Start here
 
@@ -121,7 +122,8 @@ scripts/hermes bridge-status
 ```
 
 See [Hermes setup and isolation](docs/hermes.md) and
-[Ambiguous integration](docs/ambiguous.md). The buyer workspace reference is
+[Ambiguous integration](docs/ambiguous.md), plus the [procurement tools and task listener](docs/procurement.md).
+The buyer workspace reference is
 `takeoffAI`; verify its exact identity using the new buyer agent's token. Use a
 dedicated OpenAI API key. `.env.example` contains variable names only. **Chip** is
 the contractor's personal Takeoff agent in Ambiguous; its DM listener uses Sol
