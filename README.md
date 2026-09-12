@@ -64,16 +64,20 @@ the communication between computers is real; the demo will distinguish those.
    that need approval.
 3. **Offers become comparable.** It clarifies units, availability, delivery, and
    package conditions. A misleadingly cheap number does not silently win.
-4. **Negotiation has a purpose.** A bounded playbook guides questions, competing
-   offers, bundles, and delivery tradeoffs. Decisions respond to the actual facts.
+4. **Negotiation has a purpose.** The buyer agent chooses questions, counteroffer
+   prices, bundles, and tactics. The vendor agent chooses concessions and disclosures
+   within its commercial limits. Code checks constraints and arithmetic; strategy
+   responds to the actual exchange.
 5. **The contractor decides something meaningful.** A concise question appears
    in Ambiguous. The answer changes the plan.
 6. **The result explains itself.** Ambiguous shows what to buy, from whom, total
    payable, delivery, and why that package was selected, with supporting evidence.
 
 We will begin with a small representative house-material package, not pretend
-that a handful of items is a complete house. A proposed starting point is eight
-requirements and three core suppliers, with a phone supplier as stretch.
+that a handful of items is a complete house. The full-demo target is 25
+representative house-material requirements with realistic ambiguity, mapped to
+available supply across three core suppliers. Phone remains stretch. See the
+[proposed contractor list and discovery cases](examples/procurement/house-discovery.md).
 
 ## Showing whether it helps
 

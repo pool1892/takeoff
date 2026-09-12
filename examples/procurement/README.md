@@ -1,4 +1,12 @@
-# Proposed procurement starter
+# Procurement examples
+
+**Current direction:** 25 representative house components, with ambiguity
+in the contractor's natural list resolved against available supply. See the
+[house discovery proposal](house-discovery.md) and its
+[raw contractor message](contractor-house-request.txt). The UX framing example
+does not determine this scenario.
+
+## Earlier painting arithmetic fixture
 
 [`material-request.json`](material-request.json) is an **invented proposal for
 review**, not a finalized team scenario, real jobsite request, supplier quote, or
@@ -8,9 +16,8 @@ interview is not part of this first path. The particular materials, quantities,
 specifications, dates, and budgets here still need Christoph and Tapan's agreement.
 
 The separate UX simulation in `src/demoScenario.js` uses a framing-lumber scenario.
-That example and this painting package are independent provisional examples;
-the team still needs to reconcile the scenario before an integrated run. Neither
-fixture establishes an agreed material package or live supplier offer.
+Both that simulation and the painting JSON below are earlier development examples;
+neither establishes the current material package or a live supplier offer.
 
 This example connects the [shared story (#1)](https://github.com/pool1892/takeoff/issues/1),
 [buyer discovery (#4)](https://github.com/pool1892/takeoff/issues/4), and
@@ -33,7 +40,7 @@ executions need their actual task references and distinct run IDs; preserve the
 fixture source and request revision when recording adoption or later changes.
 `schema_version: 0.1-proposed` labels a starting example, not a frozen API contract.
 
-Start #9 with `first_live_path` / `slice-01`: **req-01, six one-US-gallon cans of
+This older arithmetic example uses `first_live_path` / `slice-01`: **req-01, six one-US-gallon cans of
 untinted white water-based interior wall paint with eggshell sheen**. This uses
 one understandable product and unit so the first remote inquiry and recommendation
 can connect quickly. The other seven requirements are for expansion. A successful
@@ -89,11 +96,12 @@ difference must not be labeled negotiation savings. No human baseline exists in
 this fixture. Rejection or silence preserves the original deadline; the partial
 quote cannot win, and the seven other requirements remain incomplete in every case.
 
-## Align before the first run
+## Historical fixture boundaries
 
-- Christoph and Tapan: accept or revise the material lines, quantities, matching
-  constraints, synthetic location, budgets, and delivery opportunity. A different
-  package size or tradeoff is still possible.
+- These painting lines, quantities, matching constraints, synthetic location,
+  budgets, and delivery opportunity remain sample inputs for arithmetic checks.
+  The implementation agents choose the current house package and first live slice
+  together; this earlier fixture does not prescribe them.
 - Tapan: provide actual buyer-visible product/offer data and the first supported
   remote channel. No supplier URL or catalog has yet been agreed in this example.
 - Christoph and Ehsan: map these input fields and fixture references to the real

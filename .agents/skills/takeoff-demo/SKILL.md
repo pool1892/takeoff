@@ -15,10 +15,19 @@ tooling; it asks the contractor a consequential question in Ambiguous; it publis
 the explained recommendation there. The supplier agent has a separate workspace.
 Phone is fully planned stretch, with a complete core story if it is absent.
 
-Partly scripted behavior is intentional. Author opportunities, a limited playbook,
-and meaningful constraints. Decisions and the winning package should depend on the
-observed information and approved requirements, not a predetermined savings result.
-Try a changed stock/price/approval fact to check responsiveness.
+Author a small market and meaningful constraints; let both agents choose their
+strategy. The buyer chooses questions, counteroffer prices, bundles, and tactics.
+The vendor chooses concessions and disclosures within its private commercial
+limits. Code validates inventory, arithmetic, permissions, and approved product
+constraints. Do not schedule strategic moves or concessions to force the story.
+Try a changed stock/price/approval fact to check responsiveness. Use recorded runs
+for reliable playback instead of requiring identical fresh model decisions.
+
+Use 25 representative house-material requirements supplied as an imperfect
+contractor takeoff/material sheet. Discover purchasable products, compatible
+alternatives, and availability before negotiation. Include an actual meaningful
+substitution decision. The older UX fixture does not determine this scenario, and
+complete house estimation from arbitrary architectural drawings is outside scope.
 
 Give the final recommendation evidence: selected product and supplier, quantity,
 total payable, delivery, material tradeoffs, rejected alternatives, and the quote

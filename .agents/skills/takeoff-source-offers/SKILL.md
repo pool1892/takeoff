@@ -21,6 +21,15 @@ or invent a replacement supplier.
 
 ## Discover eligible products
 
+Begin with the contractor's original material sheet or takeoff, not preassigned
+SKU mappings. Preserve shorthand and unresolved intent while deriving requirements.
+Discover purchasable SKUs, compare compatible alternatives, select supported
+candidates, and establish availability before negotiating over them. Retain more
+than one viable alternative when supply supports it. Product selection before
+negotiation is provisional; final package selection uses the resulting offers and
+actual contractor decisions. Unaffected discovery can continue while another line
+awaits clarification or approval.
+
 For each requirement, read the supplied catalogs or agreed remote supplier
 surface and preserve the supplier, product reference, unit, relevant
 specifications, and source. Classify each candidate as eligible, needing product
