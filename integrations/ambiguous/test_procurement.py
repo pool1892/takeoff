@@ -62,6 +62,9 @@ class ProcurementTests(unittest.TestCase):
                                                    'TAKEOFF_AMBIGUOUS_MAILBOX_ID': ''})
         self.environment.start()
         self.addCleanup(self.environment.stop)
+        progress = patch('procurement.notify_progress')
+        self.progress = progress.start()
+        self.addCleanup(progress.stop)
         self.task = {'id': 'task-1', 'title': 'House materials', 'description': 'Find matching material offers.',
                      'assignee_id': AGENT, 'creator_id': CONTRACTOR, 'status': 'todo',
                      'created_at': '2026-09-12T21:00:00Z'}
