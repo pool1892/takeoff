@@ -5,6 +5,11 @@ description: Design, evaluate, record, or explain the Takeoff procurement demons
 
 # Make the procurement story understandable and testable
 
+Keep demo caveats and verification details in `docs/demo-context.md`, with at most
+one discreet context link on product surfaces. Use professional business language;
+do not repeatedly prefix headings, quotes, or messages with "simulated". Preserve
+provenance in records and keep actionable commercial conditions visible.
+
 Read `AGENTS.md`, the shared demo-story issue, and the relevant UX/evaluation issue.
 Keep the house-procurement ambition while using a small coherent material package.
 

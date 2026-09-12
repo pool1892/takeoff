@@ -250,3 +250,54 @@ def test_mail_sender_requires_aligned_authentication(tmp_path, verdict, reason):
     rejected = state.get('message:run:general:email:untrusted')
     assert rejected['status'] == 'ignored' and rejected['reason'] == reason
     assert worker.tick() == 0
+
+
+def test_single_email_endpoint_hydrates_authoritative_body():
+    def handle(request):
+        assert request.url.path == '/api/mail/message-id'
+        assert request.url.params['detail'] == 'full'
+        return httpx.Response(200, json={'id': 'message-id', 'body_markdown': 'Quote ten sheets'})
+    assert connection(handle).read_email('message-id')['body_markdown'] == 'Quote ten sheets'
+
+
+def test_worker_hydrates_list_headers_before_model_and_preserves_source(tmp_path):
+    header = inbound('headers-only', '')
+    header.pop('body_text')
+    header['preview'] = 'Not the full procurement request'
+    channel, sent = poll_channel([header])
+    reads = []
+    def read_email(message_id):
+        reads.append(message_id)
+        return {'id': message_id, 'body_markdown': 'Please quote 10 sheets with standard delivery.'}
+    channel.read_email = read_email
+    calls = []
+    runtime = SimpleNamespace(respond=lambda *a, **kw: calls.append((a, kw)) or {'message': 'Quote ready'})
+    state = TransportState(tmp_path / 'state.db')
+    worker = SupplierWorker(PollMarket(), runtime, state, 'run', 'general', channel,
+                            buyers={'buyer@example.test': 'buyer'})
+    assert worker.tick() == 1
+    assert calls[0][0][3] == 'Please quote 10 sheets with standard delivery.'
+    assert calls[0][1]['request_id'] == 'email:headers-only'
+    saved = state.get('message:run:general:email:headers-only')
+    assert saved['original_body_fields']['body_markdown'].startswith('Please quote')
+    assert worker.tick() == 0
+    assert reads == ['headers-only']
+
+
+def test_html_fallback_and_tracking_only_body_never_reaches_model(tmp_path):
+    from takeoff_suppliers.channels import email_body
+    assert email_body({'body_html': '<head><style>hidden</style></head><p>Quote 10 sheets</p><p>Deliver &amp; unload.</p>'}) == 'Quote 10 sheets\n\nDeliver & unload.'
+    pixel = 'https://example.r.us-west-2.awstrack.me/pixel'
+    full = {'id': 'empty', 'body_markdown': '[' + pixel + ']',
+            'body_html': '<html><body><img src="' + pixel + '" style="display:none"></body></html>'}
+    assert email_body(full) == ''
+    channel, sent = poll_channel([inbound('empty', '')])
+    channel.read_email = lambda mid: full
+    calls = []
+    runtime = SimpleNamespace(respond=lambda *a, **kw: calls.append(a))
+    worker = SupplierWorker(PollMarket(), runtime, TransportState(tmp_path / 'state.db'),
+                            'run', 'general', channel, buyers={'buyer@example.test': 'buyer'})
+    assert worker.tick() == 1
+    assert calls == []
+    assert 'without readable request text' in sent[0][1]
+    assert worker.tick() == 0

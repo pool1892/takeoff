@@ -170,6 +170,20 @@ main implementer takes over polling rather than reserving a worker solely to wai
 
 ## Trustworthy behavior and evidence
 
+### Presentation: professional product, centralized demo context
+
+Tapan's explicit presentation direction: keep the product polished and use normal
+business language. Do not repeat "simulated", "fixture", "demo only", or generic
+disclaimers across page headings, catalog rows, quote messages, and workspace titles.
+Keep scenario caveats, provenance, limitations, and verification status together in
+[`docs/demo-context.md`](docs/demo-context.md). A single discreet context link or
+secondary About area is sufficient on product surfaces.
+
+Preserve machine-readable provenance and truthful recorded evidence. Keep actionable
+commercial facts visible: expiry, availability, delivery estimates, fees, outstanding
+approvals, and whether a transaction is a quote or an order. Centralizing demo context
+does not authorize fabricated claims or hiding a condition that changes a decision.
+
 - Preserve requirements, source references, quoted terms, and approvals. Unknown stock,
   fees, or product compatibility are not automatically favorable values.
 - Keep a proposed target distinct from a confirmed offer. Apply bundle conditions,

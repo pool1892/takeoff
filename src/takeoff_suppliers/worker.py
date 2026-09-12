@@ -7,6 +7,7 @@ import time
 import httpx
 
 from .runtime import RecoveryRequired
+from .channels import email_body
 
 
 class SupplierWorker:
@@ -21,6 +22,8 @@ class SupplierWorker:
 
     def _respond(self, buyer_id, body, source_id, kind):
         """Structured A2A decisions are explicit; free text is negotiation only."""
+        if not isinstance(body, str) or not body.strip():
+            raise ValueError("Supplier message has no readable body")
         try:
             envelope = json.loads(body)
         except (ValueError, TypeError):
@@ -61,7 +64,7 @@ class SupplierWorker:
                     raise
                 except Exception as exc:
                     raise RecoveryRequired('Commitment recorded; fulfillment task outcome requires inspection') from exc
-                return {'message': 'Simulated commitment:\n' + json.dumps(record) +
+                return {'message': 'Commitment details:\n' + json.dumps(record) +
                         '\nSupplier fulfillment task: ' + str(task['id']), 'offers': [],
                         'commercial_change': True}
             if action not in ('inquiry', 'counter'):
@@ -96,8 +99,10 @@ class SupplierWorker:
                                        'chat' if source_id.startswith('chat:') else 'email')
             except (ValueError, KeyError, TypeError):
                 result = {'status': 'invalid_request', 'offers': [],
-                          'message': 'The supplier could not validate this request. Check the message type, '
-                                     'required fields, and referenced quote or approval, then send a corrected request.'}
+                          'message': ('Your email arrived without readable request text. Please resend the '
+                                      'procurement request in the message body.') if not isinstance(body, str) or not body.strip() else
+                                     ('The supplier could not validate this request. Check the message type, '
+                                      'required fields, and referenced quote or approval, then send a corrected request.')}
             item = {**self.state.get(key), 'status': 'ready', 'result': result}
             self.state.put(key, item)
         if item['result'].get('status') == 'paused':
@@ -202,6 +207,11 @@ class SupplierWorker:
             address = (sender.get('email', '') if isinstance(sender, dict) else sender).lower()
             if address in own_emails or address not in self.buyers:
                 continue
+            source_id = 'email:' + message['id']
+            state_key = f'message:{self.run_id}:{self.vendor_id}:{source_id}'
+            previous = self.state.get(state_key) or {}
+            if previous.get('status') in ('sent', 'ignored', 'recovery_required'):
+                continue
             authentication = message.get('inbound_auth') or {}
             verdict = authentication.get('verdict') if isinstance(authentication, dict) else None
             if verdict != 'aligned':
@@ -216,13 +226,29 @@ class SupplierWorker:
                                         'body': message.get('body_text') or '',
                                         'timestamp': message.get('received_at') or message.get('sent_at')})
                 continue
+            body = email_body(message)
+            if not body:
+                try:
+                    full = self.channel.read_email(message['id'])
+                except (httpx.HTTPError, ValueError) as exc:
+                    self.state.put(state_key, {**previous, 'status': 'body_unavailable',
+                                              'source_id': source_id, 'last_error': type(exc).__name__})
+                    continue
+                # Keep the authenticated sender, timestamps and original source
+                # identity; hydrate only authored body fields from GET /mail/id.
+                message = {**message, **{k: full[k] for k in ('body_text', 'body_markdown', 'body_html') if k in full}}
+                body = email_body(message)
+            self.state.put(state_key, {**previous, 'source_id': source_id,
+                                      'timestamp': message.get('received_at') or message.get('sent_at'),
+                                      'original_body_fields': {k: message[k] for k in
+                                          ('body_text', 'body_markdown', 'body_html') if k in message}})
             def send(body, key, m=message, address=address):
                 return self.channel.send_email(address, body, key=key,
                     subject='Re: ' + m.get('subject', 'Takeoff inquiry'), thread_id=m.get('thread_id'),
                     in_reply_to=m.get('message_id'))
             timestamp = message.get('received_at') or message.get('created_at') or message.get('sent_at')
             sent += self._handle_message('email:' + message['id'], self.buyers[address],
-                                         message.get('body_text') or '', send, timestamp, run_start, retry_safe=True)
+                                         body, send, timestamp, run_start, retry_safe=True)
         for channel_id, thread_id in self.channel.config.chat_threads:
             for message in self.channel.thread(channel_id, thread_id):
                 sender = (message.get('author') or {}).get('id')

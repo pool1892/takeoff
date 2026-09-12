@@ -60,6 +60,6 @@ The local scorer reports `validation_scope: commercial_terms_and_material_covera
 
 ## Verification still required
 
-The frozen scenario and endpoint are prepared for integration. Christoph’s implementation agent reported a successful buyer-machine public catalog fetch on September 12; the isolated Hermes and email round trip remain separate checks. **An actual cross-computer buyer request and supplier response is not yet verified in this handoff.** Capture the real email/thread, issued quote, buyer receipt, and display in the buyer Ambiguous workspace before claiming that milestone. Keep failures and partial attempts in the run evidence.
+Christoph’s implementation agent verified the public catalog from the buyer computer. Two authenticated Chip emails reached the supplier and received catalog-only replies; recipient inspection showed tracking pixels without authored text. The buyer has corrected outgoing mail to `body_markdown`, and the supplier now hydrates inbox entries with `GET /api/mail/{id}?detail=full` and rejects empty content before invoking the model. Previous attempts remain recorded. The same run is active for a fresh buyer request. An issued quote, buyer counteroffer, and buyer-workspace display remain the next live checks.
 
 The Fable voice handoff is pending coordination. The optional supplier WebSocket voice adapter exists separately; phone is not a dependency of the core 25-line package and is not yet a verified Fable integration. Human comparisons and live voice require their own evidence. Recorded replay must be labeled as replay.

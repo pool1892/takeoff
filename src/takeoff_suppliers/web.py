@@ -128,14 +128,32 @@ def create_app(market: Any, operator_token: str, buyer_token: str,
             "textarea{width:90%;min-height:90px}button{background:#18372c;color:white;border:0;border-radius:4px;cursor:pointer}"
             "a{color:#176742}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:8px;border-bottom:1px solid #ddd}"
             "pre{white-space:pre-wrap;overflow-wrap:anywhere}.muted{color:#53665c}</style>"
-            "<header><strong>TAKEOFF / SUPPLIER MARKET</strong><p class='muted'>Simulated businesses · inspectable terms · no real orders</p></header>"
-            f"<h1>{esc(title)}</h1>{content}</html>")
+            "<header><strong>TAKEOFF / SUPPLIER MARKET</strong></header>"
+            f"<h1>{esc(title)}</h1>{content}"
+            "<footer><small><a href='https://github.com/pool1892/takeoff/blob/codex/supplier-epic/docs/demo-context.md'>About this demo</a></small></footer></html>")
 
     def esc(value: Any) -> str:
         return html.escape(str(value), quote=True)
 
     def evidence(value: Any) -> str:
-        return "<pre>" + esc(json.dumps(value, indent=2, default=str)) + "</pre>"
+        def presentation(item: Any) -> Any:
+            # Keep provenance in the API and repository; business pages show
+            # the commercial terms without repeating the environment label.
+            if isinstance(item, dict):
+                return {key: presentation(val) for key, val in item.items()
+                        if key not in {"simulated", "scenario_label", "evidence_kind", "live_transport_verified"}}
+            if isinstance(item, list):
+                return [presentation(val) for val in item
+                        if val != "Simulated offer; no real purchase is made."]
+            if isinstance(item, str):
+                return (item.replace("simulated catalog and terms", "catalog and terms")
+                        .replace("Prepare simulated material package", "Prepare material package")
+                        .replace("simulated_commitment", "recorded")
+                        .replace("all_fixture_taxes_included", "Taxes included")
+                        .replace("unknown/not_modeled", "Tax treatment not specified"))
+            return item
+
+        return "<pre>" + esc(json.dumps(presentation(value), indent=2, default=str)) + "</pre>"
 
     def hidden(csrf: str) -> str:
         return f"<input type='hidden' name='csrf' value='{esc(csrf)}'>"
@@ -400,7 +418,7 @@ def create_app(market: Any, operator_token: str, buyer_token: str,
                 decisions += f"<label><input type='checkbox' name='approve:{esc(line['product_id'])}' value='yes'> I explicitly approve {esc(line['product_id'])} instead of requirement {esc(line['substitution_for'])}.</label>"
         actions = ""
         if result["status"] == "issued":
-            actions = f"<form method='post' action='/runs/{quote(run_id)}/offers/{quote(quote_id)}/accept'>{hidden(csrf)}{decisions}<button>Accept these exact terms (simulated)</button></form><form method='post' action='/runs/{quote(run_id)}/offers/{quote(quote_id)}/reject'>{hidden(csrf)}<button>Reject this offer</button></form>"
+            actions = f"<form method='post' action='/runs/{quote(run_id)}/offers/{quote(quote_id)}/accept'>{hidden(csrf)}{decisions}<button>Accept these exact terms</button></form><form method='post' action='/runs/{quote(run_id)}/offers/{quote(quote_id)}/reject'>{hidden(csrf)}<button>Reject this offer</button></form>"
         return page("Inspect offer", evidence(result) + actions + f"<a href='/runs/{quote(run_id)}'>Continue comparing suppliers</a>")
 
     @app.post("/runs/{run_id}/offers/{quote_id}/accept")

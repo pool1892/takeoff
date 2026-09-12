@@ -362,7 +362,7 @@ class Market:
         catalog = self.catalog(run_id, vendor_id)
         request_id = _text(request_id, "request id") if request_id else _id("request")
         # Facts are rendered from the public catalog, never from model prose or rules.
-        lines = [f"{catalog['vendor']['name']} — simulated catalog and terms."]
+        lines = [f"{catalog['vendor']['name']} — catalog and terms."]
         for product in catalog["products"]:
             lines.append(f"{product['id']}: {product['name']}; {_json(product['specifications'])}; "
                          f"USD {product['list_price']} per {product['unit']}; "
@@ -511,8 +511,7 @@ class Market:
                 db.execute("UPDATE market_offers SET status='countered' WHERE id=?", (previous_id,))
             now = _now()
             quote_id = _id("quote")
-            conditions = ["Simulated offer; no real purchase is made.",
-                          "Stock and delivery capacity are reserved only after acceptance and a final availability check.",
+            conditions = ["Stock and delivery capacity are reserved only after acceptance and a final availability check.",
                           "Discounts apply only to this complete package; amounts are USD."]
             if any(line["substitution_for"] for line in lines):
                 conditions.append("Substitutions require an explicit recorded buyer approval before acceptance.")
@@ -628,7 +627,7 @@ class Market:
                                     "total": offer["total"], "currency": offer["currency"],
                                     "tax_treatment": offer.get("tax_treatment", "unknown/not_modeled"),
                                     "delivery": offer["delivery"], "status": "simulated_commitment"}
-            offer["tasks"] = [{"id": commitment_id + "_fulfill", "title": "Prepare simulated material package",
+            offer["tasks"] = [{"id": commitment_id + "_fulfill", "title": "Prepare material package",
                                "quote_id": quote_id, "status": "pending", "simulated": True}]
             evidence = self._event(db, run_id, "offer_accepted", {
                 "quote_id": quote_id, "commitment_id": commitment_id, "total": offer["total"],

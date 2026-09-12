@@ -1,8 +1,55 @@
 """Ambiguous's REST transport; credentials never enter message bodies."""
 from dataclasses import dataclass, field
+from html.parser import HTMLParser
+import re
 from urllib.parse import quote
 
 import httpx
+
+
+class _MailHTMLText(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.parts, self.images = [], []
+        self.hidden_depth = 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ('script', 'style', 'head'):
+            self.hidden_depth += 1
+        if tag == 'img':
+            self.images.extend(v for k, v in attrs if k == 'src' and v)
+        if not self.hidden_depth and tag in ('p', 'div', 'br', 'li', 'tr', 'pre'):
+            self.parts.append('\n')
+
+    def handle_endtag(self, tag):
+        if tag in ('script', 'style', 'head') and self.hidden_depth:
+            self.hidden_depth -= 1
+        if not self.hidden_depth and tag in ('p', 'div', 'li', 'tr', 'pre'):
+            self.parts.append('\n')
+
+    def handle_data(self, data):
+        if not self.hidden_depth:
+            self.parts.append(data)
+
+
+def email_body(message):
+    """Read actual content, never an inbox preview or a tracking-pixel link."""
+    parser = _MailHTMLText()
+    markup = message.get('body_html')
+    if isinstance(markup, str):
+        parser.feed(markup)
+    for field in ('body_text', 'body_markdown'):
+        body = message.get(field)
+        if not isinstance(body, str):
+            continue
+        for src in parser.images:
+            body = body.replace('[' + src + ']', '').replace('![](' + src + ')', '')
+        # Ambiguous's Markdown conversion can turn an SES tracking image into
+        # a bare URL even when the originating message has no authored content.
+        body = re.sub(r'\[?https://[^/\s\]]*awstrack\.me/[^\s\]]+\]?', '', body).strip()
+        if body:
+            return body
+    return ''.join(parser.parts).strip()
 
 
 @dataclass(frozen=True)
@@ -59,6 +106,12 @@ class AmbiguousClient:
                 raise ValueError('Inbox pagination did not advance')
             params['cursor'] = cursor
 
+    def read_email(self, message_id):
+        data = self.request('GET', f'/api/mail/{quote(message_id, safe="")}', params={'detail': 'full'})
+        if data.get('id') != message_id:
+            raise ValueError('Full email response does not match the requested message')
+        return data
+
     def thread(self, channel_id, message_id):
         path = f'/api/channels/{quote(channel_id, safe="")}/messages/{quote(message_id, safe="")}/thread'
         data = self.request('GET', path)
@@ -93,7 +146,7 @@ class AmbiguousClient:
         import json
         quote_id = commitment.get('quote_id') or commitment.get('id')
         return self.request('POST', '/api/tasks', json={
-            'title': f'[Simulated] Fulfill Takeoff quote {quote_id}'[:255],
-            'description': 'Demo commitment only; no real purchase or dispatch.\n\n```json\n' +
+            'title': f'Fulfill Takeoff quote {quote_id}'[:255],
+            'description': 'Fulfillment details\n\n```json\n' +
                            json.dumps(commitment, indent=2) + '\n```',
             'status': 'todo', 'assignee_id': self.config.user_id})

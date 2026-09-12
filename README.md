@@ -53,8 +53,10 @@ and the final buying plan. The supplier agent's workspace represents a genuinely
 separate side with its own context and private commercial information.
 
 Website, email, and agent-to-agent interactions are the core. Phone is fully
-planned stretch. Vendor businesses and commercial data can be simulated while
-the communication between computers is real; the demo will distinguish those.
+planned stretch. The [demo context](docs/demo-context.md) documents the authored
+business data, live integrations, and verification status. Keep product screens
+focused on suppliers, commercial terms, and decisions; present this context once
+in the repository or a discreet aside.
 
 ## The demonstration
 
@@ -134,7 +136,7 @@ journey or the remote supplier integration is implemented.
 
 ## Deterministic procurement demo state
 
-`src/demoScenario.js` provides a small, buyer-visible **simulated** scenario that an
+`src/demoScenario.js` provides a small, authored scenario that an
 Ambiguous workspace can render while the live Hermes and remote-supplier connections
 are being integrated. It models the contractor's priority brief, quote evidence,
 negotiation history, one consequential delivery decision, a decision-dependent
@@ -147,7 +149,10 @@ npm test
 Use `createDemoProcurement()` before a decision to render the required contractor
 question. Pass `accept-five-day` or `require-three-day` after the answer; the selected
 supplier changes based on that answer. The fixture intentionally excludes buyer and
-supplier private commercial state, and must remain visibly labelled as simulated.
+supplier private commercial state. Describe its fixture and replay status in the
+[demo context](docs/demo-context.md); business screens should show the actual
+quotes, conditions, and decision without repeated simulation labels. This state
+does not establish that a live procurement exchange occurred.
 
 
 ## Supplier setup
