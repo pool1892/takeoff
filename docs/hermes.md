@@ -34,9 +34,13 @@ keys as command arguments or commit them. Runtime configuration is in
 `.local/hermes/config.yaml` and credentials are in `.local/hermes/.env`, both
 ignored by Git. Initialization preserves existing files.
 
-The configured model is `gpt-5.6-sol` with high reasoning and Fast processing through
+The configured experimental buyer model is `gpt-5.6-luna` with maximum reasoning
+(`max`) and Fast processing through
 a named direct OpenAI Responses provider. Change `model.default` in the local
-config to select another model your key can access.
+config and the two bridge invocation arguments together to select another model
+your key can access. Explicit model arguments prevent a resumed session from
+restoring its earlier model. The template uses `compression.tail_mode: legacy`
+so the configured 0.20 tail ratio takes effect.
 The provider points explicitly at `https://api.openai.com/v1`; it does not reuse
 personal Hermes credentials or an OpenRouter account.
 
@@ -47,6 +51,47 @@ The chat bridge connects contractor direct messages in Ambiguous to actual Herme
 turns. It also processes explicitly configured assigned procurement tasks through
 the [procurement listener and tools](procurement.md); that path retains one native
 Hermes session per task and resumes it on supplier replies or contractor comments.
+
+## Browser voice server
+
+Start the human-supplier browser call server in the same isolated runtime:
+
+```bash
+scripts/hermes voice-web --request /workspace/.local/hermes/voice/request.json
+```
+
+The request file must already exist at `.local/hermes/voice/request.json` on the
+server; its contents define the authorized call. The module's example is used if
+`--request` is omitted. This foreground command runs
+`python -m integrations.voice.human_call`, prints the seller page URL with its
+session-access token, and keeps running until Ctrl-C. Keep that URL private.
+The OpenAI key is loaded only from the existing repo-local runtime `.env`, and
+call evidence is saved under `.local/hermes/voice/calls`. No host key fallback is
+introduced. Stop the server with Ctrl-C to remove its containers and network;
+the separate chat listener and saved evidence remain available.
+
+Only **127.0.0.1:3000** on this server is published. The buyer stays on its
+gateway-free internal network. Its credential-free egress helper also relays
+this one port to the buyer's voice server; the reviewed HTTPS allowlist remains
+in force. No public host address or arbitrary port can be selected with this
+launcher. The voice module listens on `0.0.0.0:3000` inside its container so that
+the helper can reach it; this does not publish that address on the host.
+
+For a browser on the hackathon Mac while this server is at home, use Tailscale
+for host reachability and an SSH local tunnel. Replace `TAILSCALE_HOST` with the
+home machine's actual Tailscale hostname or address, then run on the Mac:
+
+```bash
+ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:3000:127.0.0.1:3000 cs@TAILSCALE_HOST
+```
+
+Open the printed `http://127.0.0.1:3000/s/.../` URL in the Mac's browser and allow
+microphone access. The localhost URL supports the browser's secure-context
+microphone requirement without exposing the server publicly. The browser also
+needs access to OpenAI for WebRTC audio. If port 3000 is busy on the Mac, stop the
+conflicting local listener before opening the tunnel. Launcher tests verify
+command construction and cleanup; a live page load and voice session must still
+be verified after startup. See [voice handoff](voice-handoff.md) for the call flow.
 
 ## Isolation boundary
 
@@ -60,7 +105,8 @@ files use container tmpfs. Linux capabilities are dropped and privilege escalati
 is disabled.
 
 The host home, SSH credentials, desktop sockets, Docker socket, host PID namespace,
-and host network namespace are not mounted or shared. No ports are published.
+and host network namespace are not mounted or shared. Normal Hermes and chat
+launches publish no ports; `voice-web` publishes only the loopback port above.
 The buyer uses an internal Docker network with `gateway_mode_ipv4=isolated`, so
 even a host service listening on every address is not available via a bridge
 gateway. It has no default route. A separate unprivileged proxy allows HTTPS only
@@ -108,8 +154,12 @@ See [Ambiguous setup](ambiguous.md) for workspace verification and task/notifica
 commands. CLI availability is setup evidence; an actual workspace task, remote
 supplier exchange, and posted result are separate integration milestones.
 
+The installed runtime's reasoning parser and Responses transport support Luna's
+`max` setting. Run [model_smoke.py](../runtime/hermes/model_smoke.py) inside the
+container to verify the configuration produces Luna, maximum reasoning, and
+Priority on a mocked request without an API call.
+
 Sources: [official Hermes Docker documentation](https://hermes-agent.nousresearch.com/docs/user-guide/docker),
-[official Hermes config example](https://github.com/NousResearch/hermes-agent/blob/main/cli-config.yaml.example),
-[OpenAI GPT-5.6 Sol API reference](https://developers.openai.com/api/docs/models/gpt-5.6-sol).
+[official Hermes config example](https://github.com/NousResearch/hermes-agent/blob/main/cli-config.yaml.example).
 Network references: [Docker isolated gateway mode](https://docs.docker.com/engine/network/port-publishing/#gateway-modes)
 and [Node environment proxy support](https://nodejs.org/api/cli.html#node_use_env_proxy1).

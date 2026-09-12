@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Takeoff — live call (you are the seller)</title>
+<style>
+  body { font: 16px/1.4 system-ui, sans-serif; margin: 0; background: #0f1115; color: #e8e8e8; }
+  header { padding: 14px 20px; background: #1a1d24; border-bottom: 1px solid #2a2e37; }
+  header b { color: #ffd166; }
+  main { max-width: 900px; margin: 0 auto; padding: 16px 20px; }
+  .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0 16px; }
+  button { font: inherit; padding: 10px 18px; border: 0; border-radius: 8px; cursor: pointer; }
+  #start { background: #06d6a0; color: #062; } #stop { background: #ef476f; color: #fff; }
+  button:disabled { opacity: .4; cursor: default; }
+  #status { color: #9aa3b2; }
+  .row { padding: 8px 12px; border-radius: 8px; margin: 6px 0; white-space: pre-wrap; }
+  .seller { background: #22303f; } .buyer { background: #2d2440; }
+  .row small { display: block; color: #9aa3b2; margin-bottom: 2px; }
+  #captions { min-height: 200px; }
+  .note { color: #9aa3b2; font-size: 14px; }
+</style>
+</head>
+<body>
+<header>Takeoff live call — <b>you are the SELLER</b> (a human playing the supplier). The voice you hear is Takeoff's buyer agent, an AI. Speak naturally; you can interrupt.</header>
+<main>
+  <div class="bar">
+    <button id="start">Answer the call</button>
+    <button id="stop" disabled>Hang up</button>
+    <span id="status">Ready. Grant microphone access when asked.</span>
+  </div>
+  <audio id="audio" autoplay></audio>
+  <div id="captions"></div>
+  <p class="note">Captions are live transcripts and may contain mistakes. The buyer side records the call evidence; a confirmed readback is a quote, never an order.</p>
+</main>
+<script type="module">
+const start = document.getElementById('start'), stop = document.getElementById('stop'), status = document.getElementById('status');
+const audio = document.getElementById('audio'), captions = document.getElementById('captions');
+const base = location.pathname.replace(/\/$/, '');
+let peer, events, microphone, finalized = false;
+const rows = { seller: null, buyer: null };
+let last = null;
+
+function caption(speaker, text) {
+  if (last !== speaker || !rows[speaker]) {
+    const row = document.createElement('div');
+    row.className = 'row ' + speaker;
+    row.innerHTML = `<small>${speaker === 'seller' ? 'You (seller)' : 'Takeoff buyer agent'}</small>`;
+    row.append(document.createTextNode(''));
+    captions.append(row);
+    rows[speaker] = row;
+    last = speaker;
+  }
+  rows[speaker].lastChild.textContent += text;
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function cleanup() {
+  microphone?.getTracks().forEach(t => t.stop());
+  events?.close(); peer?.close(); audio.srcObject = null;
+  start.disabled = false; stop.disabled = true;
+}
+
+start.addEventListener('click', async () => {
+  start.disabled = true; finalized = false; status.textContent = 'Connecting…';
+  try {
+    peer = new RTCPeerConnection();
+    peer.addEventListener('track', e => { audio.srcObject = new MediaStream([e.track]); audio.play().catch(() => status.textContent = 'Press play on the audio control.'); });
+    microphone = await navigator.mediaDevices.getUserMedia({ audio: true });
+    for (const track of microphone.getAudioTracks()) peer.addTrack(track, microphone);
+    events = peer.createDataChannel('oai-events');
+    events.addEventListener('message', ({ data }) => {
+      const event = JSON.parse(data);
+      if (event.type === 'session.started') { stop.disabled = false; status.textContent = 'Connected. Session ' + event.session.id; }
+      else if (event.type === 'session.input_transcript.delta') caption('seller', event.delta);
+      else if (event.type === 'session.output_transcript.delta') caption('buyer', event.delta);
+      else if (event.type === 'session.closed') { finalized = true; status.textContent = 'Call ended.'; cleanup(); }
+    });
+    events.addEventListener('close', () => { if (!finalized) { status.textContent = 'Disconnected.'; cleanup(); } });
+    const offer = await peer.createOffer();
+    await peer.setLocalDescription(offer);
+    if (peer.iceGatheringState !== 'complete') {
+      await new Promise(resolve => { const check = () => { if (peer.iceGatheringState === 'complete') { peer.removeEventListener('icegatheringstatechange', check); resolve(); } }; peer.addEventListener('icegatheringstatechange', check); });
+    }
+    const response = await fetch(base + '/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sdp: peer.localDescription.sdp }) });
+    if (!response.ok) throw new Error((await response.json()).error || response.statusText);
+    const result = await response.json();
+    await peer.setRemoteDescription({ type: 'answer', sdp: result.sdp });
+  } catch (error) { status.textContent = 'Failed: ' + error.message; cleanup(); }
+});
+stop.addEventListener('click', () => { stop.disabled = true; try { events.send(JSON.stringify({ type: 'session.close', event_id: 'close_ui' })); } catch { cleanup(); } });
+</script>
+</body>
+</html>

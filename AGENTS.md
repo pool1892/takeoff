@@ -159,6 +159,11 @@ using verified evidence, and avoid repetitive comments when nothing changed.
 Distinguish implemented/tested code, live integration, and completed demo outcomes.
 The main implementer owns Git commits and pushes of coherent tested state; audit
 workers notify the main implementer rather than racing concurrent commits/pushes.
+The current GitHub login cannot access Project fields. Christoph explicitly says
+to stop spending time on Project/browser authentication and continue implementation.
+Give him an overall progress update every **15 minutes**: what works, blockers,
+next steps, and confidence against the 4 pm demo target. Do not claim the board is
+updated; resume board work only if access becomes available without a detour.
 
 ## How to work at hackathon pace
 

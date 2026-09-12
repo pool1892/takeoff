@@ -16,6 +16,36 @@ PIN = ROOT / 'runtime' / 'hermes' / 'image.txt'
 IMAGE = 'nousresearch/hermes-agent:latest'
 BRIDGE_NAME = 'takeoff-' + hashlib.sha256(str(ROOT).encode()).hexdigest()[:12] + '-chat'
 
+# The buyer stays on its gateway-free internal network. Only the existing,
+# credential-free helper exposes loopback TCP 3000 and forwards it to that one
+# buyer service. It continues to run the unchanged reviewed HTTPS egress proxy.
+VOICE_RELAY = '''
+import runpy, socket, socketserver, sys, threading
+egress = runpy.run_path('/egress.py')
+target = (sys.argv[1], 3000)
+slots = threading.BoundedSemaphore(32)
+class Handler(socketserver.BaseRequestHandler):
+    def handle(self):
+        if not slots.acquire(blocking=False):
+            return
+        try:
+            with socket.create_connection(target, timeout=10) as upstream:
+                egress['tunnel'](self.request, upstream)
+        except OSError:
+            pass
+        finally:
+            slots.release()
+class Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+    request_queue_size = 32
+    def handle_error(self, request, client_address):
+        pass
+with egress['ProxyServer'](('0.0.0.0', 3128)) as proxy, Server(('0.0.0.0', 3000), Handler) as ingress:
+    threading.Thread(target=proxy.serve_forever, daemon=True).start()
+    ingress.serve_forever()
+'''
+
 
 def bridge_status(engine):
     result = subprocess.run([*engine, 'inspect', BRIDGE_NAME + '-buyer',
@@ -87,7 +117,9 @@ def docker():
     return ['sudo', 'docker']
 
 
-def run(args, background=False):
+def run(args, background=False, voice_web=False):
+    if voice_web and background:
+        raise SystemExit('Voice web runs in the foreground; stop it with Ctrl-C.')
     init()
     uid, gid = owner()
     engine = docker()
@@ -136,13 +168,18 @@ def run(args, background=False):
         command += ['-it']
     else:
         command += ['-i']
+    if voice_web:
+        command += ['--env', 'PYTHONPATH=/workspace',
+                    '--env', 'TAKEOFF_VOICE_HOME=/workspace/.local/hermes/voice']
+        if os.environ.get('TAKEOFF_VOICE_WEB_TOKEN'):
+            command += ['--env', 'TAKEOFF_VOICE_WEB_TOKEN=' + os.environ['TAKEOFF_VOICE_WEB_TOKEN']]
     keep_running = False
     try:
         subprocess.run([*engine, 'network', 'create', '--internal',
                         '--opt', 'com.docker.network.bridge.gateway_mode_ipv4=isolated',
                         '--label', 'com.takeoff.runtime=hermes', network],
                        check=True, stdout=subprocess.DEVNULL)
-        subprocess.run([*engine, 'run', '--detach', '--rm', '--read-only',
+        proxy_command = [*engine, 'run', '--detach', '--rm', '--read-only',
                         '--name', proxy_name, '--network=bridge',
                         '--label', 'com.takeoff.runtime=hermes',
                         '--user', f'{uid}:{gid}',
@@ -150,8 +187,13 @@ def run(args, background=False):
                         '--pids-limit=64', '--memory=128m', '--cpus=1',
                         '--mount', f'type=bind,src={ROOT / "runtime/hermes/egress.py"},dst=/egress.py,readonly',
                         '--tmpfs', '/opt/data:ro,size=1m',
-                        '--entrypoint', '/opt/hermes/.venv/bin/python', image, '/egress.py'],
-                       check=True, stdout=subprocess.DEVNULL)
+                        '--entrypoint', '/opt/hermes/.venv/bin/python']
+        if voice_web:
+            proxy_command += ['--publish', '127.0.0.1:3000:3000/tcp', image,
+                              '-c', VOICE_RELAY, buyer_name]
+        else:
+            proxy_command += [image, '/egress.py']
+        subprocess.run(proxy_command, check=True, stdout=subprocess.DEVNULL)
         subprocess.run([*engine, 'network', 'connect', network, proxy_name], check=True)
         info = json.loads(subprocess.check_output(
             [*engine, 'inspect', proxy_name, '--format', '{{json .NetworkSettings.Networks}}'], text=True))
@@ -192,7 +234,7 @@ def main():
     args = sys.argv[1:]
     action = args[0] if args else 'chat'
     if action in ('help', '--help', '-h'):
-        print('scripts/hermes init | pull | credentials | smoke | network-smoke | bridge-start | bridge-stop | bridge-status | ambi <args> | exec <command> | <Hermes CLI args>')
+        print('scripts/hermes init | pull | credentials | smoke | network-smoke | bridge-start | bridge-stop | bridge-status | voice-web [--request container-path] | ambi <args> | exec <command> | <Hermes CLI args>')
         return 0
     if action == 'init':
         init()
@@ -218,6 +260,12 @@ def main():
         return run(['exec', '/opt/hermes/.venv/bin/python', '/workspace/runtime/hermes/network_smoke.py'])
     if action == 'ambi':
         return run(['exec', 'node', '/workspace/integrations/ambiguous/run.mjs', *args[1:]])
+    if action == 'voice-web':
+        if any(arg in ('--bind', '--port') or arg.startswith(('--bind=', '--port=')) for arg in args[1:]):
+            raise SystemExit('voice-web uses only host 127.0.0.1:3000; bind and port overrides are unavailable.')
+        return run(['exec', '/opt/hermes/.venv/bin/python', '-u', '-m',
+                    'integrations.voice.human_call', *args[1:], '--bind', '0.0.0.0', '--port', '3000'],
+                   voice_web=True)
     if action == 'bridge-start':
         return run(['exec', '/opt/hermes/.venv/bin/python', '-u', '/workspace/integrations/ambiguous/bridge.py'], background=True)
     if action == 'bridge-status':

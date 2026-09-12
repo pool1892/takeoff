@@ -132,6 +132,8 @@ def evaluate_plan(run, selected_quotes, candidates=None, approvals=None, now=Non
     requirement_map = {r["id"]: r for r in requirements}
     catalog = _records(candidates if candidates is not None else run.get("candidates", []))
     current_products = _records(run.get("products", []))
+    supplier_names = {s.get("id", s.get("vendor_id")): s.get("name")
+                      for s in _records(run.get("suppliers", [])) if s.get("name")}
     approvals = _records(approvals if approvals is not None else run.get("approvals", []))
     available_quotes = _records(run.get("quotes", []))
     selected_quotes = list(selected_quotes)
@@ -247,6 +249,8 @@ def evaluate_plan(run, selected_quotes, candidates=None, approvals=None, now=Non
             if req is None:
                 line_issues.append("Quoted requirement is not in the current request.")
             product = _product(catalog, rid, pid, vendor, current_products)
+            result["product_name"] = line.get("name") or (product or {}).get("name") or pid
+            result["requirement_name"] = (req or {}).get("name") or (req or {}).get("source_text") or rid
             if product is None:
                 line_issues.append("Public product facts are missing.")
             if req and product:
@@ -321,6 +325,8 @@ def evaluate_plan(run, selected_quotes, candidates=None, approvals=None, now=Non
             line_results.append(result)
         blockers.extend(f"{label}: {issue}" for issue in issues)
         offers.append({"quote_id": qid, "vendor_id": vendor, "revision": quote.get("revision"),
+                       "supplier_name": supplier_names.get(vendor) or quote.get("supplier_name") or vendor,
+                       "expires_at": quote.get("expires_at"),
                        "total": quote.get("total"), "lines": line_results,
                        "fees": _terms(quote.get("fees")), "discounts": _terms(quote.get("discounts")),
                        "conditions": deepcopy(quote.get("conditions", [])),
@@ -365,7 +371,9 @@ def evaluate_plan(run, selected_quotes, candidates=None, approvals=None, now=Non
     for quote in available_quotes:
         if _qid(quote) not in seen:
             reasons = run.get("rejection_reasons", {})
-            rejected.append({"quote_id": _qid(quote), "reason": reasons.get(_qid(quote), "Not selected in the model-proposed package; no further rejection reason recorded."),
+            rejected.append({"quote_id": _qid(quote),
+                             "supplier_name": supplier_names.get(quote.get("vendor_id")) or quote.get("supplier_name") or quote.get("vendor_id") or _qid(quote),
+                             "reason": reasons.get(_qid(quote), "Not selected in the model-proposed package; no further rejection reason recorded."),
                              "evidence_refs": quote.get("evidence_refs", [])})
     return {"run_id": run.get("id", run.get("run_id")), "evaluated_at": evaluated_at.isoformat(),
             "status": "complete" if not blockers else "partial", "complete": not blockers,

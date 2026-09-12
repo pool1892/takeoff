@@ -36,3 +36,20 @@ submitted. Send short progress and interface messages through that same channel;
 main can read results. Supplier coding coordination is with
 `tapan-agent@agentmail.to`; main currently handles that mailbox conversation to
 avoid conflicting instructions. All coordination emails are user-authorized.
+
+## Status (September 12, ~16:20 Pacific)
+
+Christoph chose GPT-Live (`gpt-live-1`, full duplex) for the buyer's voice and a
+live human teammate playing the seller for the demo. Implementation and interface:
+[`integrations/voice/README.md`](../integrations/voice/README.md). Delegated
+decisions run on `gpt-5.6-luna` at `reasoning.effort=max`; speech stays on
+`gpt-live-1`. Launch: `scripts/hermes voice-web --request /opt/data/voice/human-request.json`
+(main's launcher publishes `127.0.0.1:3000`; the seller reaches it over an SSH
+local forward from the Mac and opens the printed `/s/<token>/` page).
+
+Verified: a real `gpt-live-1` session starts from inside the isolated container
+through the egress proxy with the Responses-delegation config; helper arithmetic,
+authorization checks, and quote mapping pass local checks; the seller page serves.
+Not yet verified: a complete WebRTC conversation with a human, the in-container
+audio mock smoke, and any live call to the supplier computer (it has no speech
+key yet). Nothing here is a live milestone until those runs exist as evidence.

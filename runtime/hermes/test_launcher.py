@@ -105,7 +105,7 @@ class LauncherIsolationTests(unittest.TestCase):
         self.assertEqual((outside / 'image.txt').read_text(), 'leave unchanged\n')
 
     def run_mocked(self, launcher, *, background=True, buyer_result=0,
-                   status='stopped', fail_operation=None):
+                   status='stopped', fail_operation=None, voice_web=False):
         """Exercise command construction and resource lifetime without host Docker."""
         launcher.PIN.write_text('nousresearch/hermes-agent@sha256:' + 'a' * 64)
         commands = []
@@ -129,7 +129,7 @@ class LauncherIsolationTests(unittest.TestCase):
                 patch.object(launcher.subprocess, 'run', side_effect=execute), \
                 patch.object(launcher.subprocess, 'check_output', side_effect=inspect):
             try:
-                result = launcher.run(['exec', 'bridge.py'], background=background)
+                result = launcher.run(['exec', 'bridge.py'], background=background, voice_web=voice_web)
             except subprocess.CalledProcessError:
                 if fail_operation is None:
                     raise
@@ -204,6 +204,89 @@ class LauncherIsolationTests(unittest.TestCase):
         network = next(command for command in commands if command[1:3] == ['network', 'create'])
         self.assertIn('--internal', network)
         self.assertIn('com.docker.network.bridge.gateway_mode_ipv4=isolated', network)
+
+    def test_voice_web_publishes_only_loopback_on_credential_free_relay(self):
+        launcher = self.launcher('voice-boundary')
+        result, commands = self.run_mocked(launcher, background=False, voice_web=True)
+        self.assertEqual(result, 0)
+        buyer = next(c for c in commands if c[1:3] == ['run', '--rm'])
+        proxy = next(c for c in commands if c[1:3] == ['run', '--detach'])
+        self.assertNotIn('--publish', buyer)
+        self.assertEqual(proxy[proxy.index('--publish') + 1], '127.0.0.1:3000:3000/tcp')
+        self.assertEqual(sum(c.count('--publish') for c in commands), 1)
+        self.assertEqual(proxy[proxy.index('--network=bridge')], '--network=bridge')
+        self.assertEqual(proxy[-1], buyer[buyer.index('--name') + 1])
+        self.assertEqual(proxy[-2], launcher.VOICE_RELAY)
+        self.assertEqual([proxy[i + 1] for i, arg in enumerate(proxy) if arg == '--mount'],
+                         [f'type=bind,src={launcher.ROOT / "runtime/hermes/egress.py"},dst=/egress.py,readonly'])
+        self.assertNotIn('--env-file', proxy)
+        self.assertNotIn('--env', proxy)
+        for flag in ('--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges', '--dns=127.0.0.1'):
+            self.assertIn(flag, buyer)
+        self.assertIn('PYTHONPATH=/workspace', buyer)
+        self.assertIn('TAKEOFF_VOICE_HOME=/workspace/.local/hermes/voice', buyer)
+        self.assertIn(f'type=bind,src={launcher.ROOT},dst=/workspace,readonly', buyer)
+        self.assertEqual(buyer[buyer.index('--user') + 1], '1000:1000')
+        network = next(c for c in commands if c[1:3] == ['network', 'create'])
+        self.assertIn('--internal', network)
+        self.assertIn('com.docker.network.bridge.gateway_mode_ipv4=isolated', network)
+        network_name = buyer[buyer.index('--network') + 1]
+        self.assertNotEqual(network_name, launcher.BRIDGE_NAME)
+        self.assertEqual(commands[-3:], [
+            ['docker', 'rm', '-f', network_name + '-buyer'],
+            ['docker', 'rm', '-f', network_name + '-egress'],
+            ['docker', 'network', 'rm', network_name]])
+
+    def test_voice_web_bind_failure_cleans_its_own_network(self):
+        launcher = self.launcher('voice-publish-failure')
+        result, commands = self.run_mocked(launcher, background=False, voice_web=True,
+                                           fail_operation=['run', '--detach'])
+        self.assertEqual(result, 1)
+        self.assertFalse(any(c[1:3] == ['run', '--rm'] for c in commands))
+        self.assertEqual(commands[-1][1:3], ['network', 'rm'])
+        self.assertNotEqual(commands[-1][-1], launcher.BRIDGE_NAME)
+
+    def test_voice_web_command_runs_module_and_disallows_port_overrides(self):
+        launcher = self.launcher('voice-command')
+        with patch.object(launcher.sys, 'argv', ['hermes', 'voice-web', '--request', '/workspace/.local/hermes/voice/request.json']), \
+                patch.object(launcher, 'run', return_value=0) as run:
+            self.assertEqual(launcher.main(), 0)
+            run.assert_called_once_with(['exec', '/opt/hermes/.venv/bin/python', '-u', '-m',
+                'integrations.voice.human_call', '--request', '/workspace/.local/hermes/voice/request.json',
+                '--bind', '0.0.0.0', '--port', '3000'], voice_web=True)
+        for option in ('--bind', '--bind=0.0.0.0', '--port', '--port=8080'):
+            with self.subTest(option=option), patch.object(launcher.sys, 'argv', ['hermes', 'voice-web', option]), \
+                    patch.object(launcher, 'run') as run:
+                with self.assertRaisesRegex(SystemExit, '127.0.0.1:3000'):
+                    launcher.main()
+                run.assert_not_called()
+
+    def test_voice_relay_has_one_fixed_upstream_and_reuses_reviewed_proxy(self):
+        from unittest.mock import MagicMock
+        launcher = self.launcher('voice-relay')
+        class InertServer:
+            def __init__(self, address, handler=None):
+                self.address = address
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                pass
+            def serve_forever(self):
+                pass
+        tunnel = MagicMock()
+        egress = {'ProxyServer': InertServer, 'tunnel': tunnel}
+        with patch('runpy.run_path', return_value=egress) as load, \
+                patch('socketserver.TCPServer', InertServer), patch('threading.Thread'), \
+                patch('sys.argv', ['relay', 'takeoff-voice-buyer']):
+            namespace = {}
+            exec(compile(launcher.VOICE_RELAY, '<voice-relay>', 'exec'), namespace)
+            load.assert_called_once_with('/egress.py')
+        handler = object.__new__(namespace['Handler'])
+        handler.request = MagicMock()
+        with patch('socket.create_connection') as connect:
+            handler.handle()
+            connect.assert_called_once_with(('takeoff-voice-buyer', 3000), timeout=10)
+            tunnel.assert_called_once_with(handler.request, connect.return_value.__enter__.return_value)
 
     def test_root_launch_uses_sudo_caller_and_preserves_state_ownership(self):
         launcher = self.launcher('root-caller')

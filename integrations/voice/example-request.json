@@ -1,0 +1,16 @@
+{
+  "_note": "MOCK FIXTURE ONLY. Synthetic run/vendor IDs and a synthetic plywood line matching mock_supplier.py. Never use for a live human or supplier call; the live request is prepared separately from the actual contractor source.",
+  "run_id": "run_example_synthetic",
+  "vendor_id": "mock-vendor",
+  "objective": "Get a complete, confirmed delivered quote for 40 sheets of 1/2 inch CDX plywood (4x8) delivered by Thursday September 17. Clarify unit price, delivery fee, tax treatment, and delivery date. If a counteroffer is authorized and worthwhile, make at most one, then confirm the best readback.",
+  "requirements": [
+    {"requirement_id": "MOCK-R1", "description": "1/2 in CDX plywood sheathing, 4x8 sheets, exterior glue (synthetic example)", "quantity": 40, "unit": "sheet",
+     "must": ["CDX or better exterior-rated", "4x8 full sheets", "delivered by 2026-09-17"]}
+  ],
+  "known_alternatives": [
+    {"product": "7/16 in OSB sheathing", "status": "substitution requires contractor approval; do not accept on the call"}
+  ],
+  "allowed_actions": {"counteroffer": true, "max_total": null, "delivery_deadline": "2026-09-17", "bundle_ask": false},
+  "disclosures": [],
+  "constraints": {"max_exchanges": 5, "max_seconds": 105}
+}
