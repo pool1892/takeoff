@@ -73,8 +73,9 @@ tool-input corrections, manual continuation/context recovery, and rate/iteration
 failures remain in its saved history. Human-account answers resolved unfaced
 insulation and the PEX fitting system; the operator applied them through the
 clarification validator. These are clarifications, not substitution approval.
-The OSB subfloor inquiry produced a $716 standalone quote, but the combined-package
-price and installation/warranty differences remain unconfirmed. Plywood stayed
+At the time of that recommendation, the OSB subfloor inquiry had produced a $716
+standalone quote; the combined-package price and installation/warranty differences
+were still unconfirmed. Plywood stayed
 in the recommendation; the meaningful substitution-decision milestone remains open.
 See the [full-house result and evidence](runs/2026-09-12-full-house.md).
 
@@ -85,9 +86,48 @@ GPT-Live speech; no voice configuration change is needed for this milestone.
 The contractor uses Bill as the project persona. Three additional residential
 projects with twelve tasks provide [authored workspace background](workspace-background.md);
 their statuses are presentation context, not measured work completed by Chip.
+A verbatim copy of the original contractor request, four background documents,
+and three background spreadsheets have been created and verified in the buyer
+workspace. A native Ambiguous procurement spreadsheet created by Chip has also
+been verified. Its existence is a publication result; the underlying buying
+evidence and operator assistance remain as described above.
+Three actual supplier messages were forwarded to the operator's inbox. Separate
+raw forwarding drafts for the shared contractor inbox were not sent at this
+checkpoint; the human-style correspondence below is a separate presentation asset.
 A live human voice conversation is verified; it contained no price offer or
 confirmed quote. See the [voice evidence](voice-handoff.md).
 An approved meaningful substitution, a confirmed phone quote, human comparison,
 and recorded demo playback remain separate unverified milestones. No human buying
 benchmark or human-time-saving measurement was conducted. See [the integration handoff](suppliers/integration.md)
 for the current endpoint and protocol.
+
+## Ten-home presentation correspondence
+
+The user requested human-style email correspondence for the shared contractor
+inbox with larger project totals. Three staged procurement emails are being
+prepared as authored presentation props. They do not record fresh supplier
+quotes, an actual ten-home negotiation, or a completed native-agent procurement
+outcome. Sending a prop through a real email service does not change its provenance.
+
+The amounts use direct 10× scaling of single-house scenario figures:
+
+| Staged correspondence amount | Derivation | Meaning |
+| --- | --- | --- |
+| $84,317.30 opening package | $8,431.73 × 10 | Authored opening-price prop |
+| $82,000 negotiated package | $8,200 × 10 | Authored revised-price prop |
+| $80,160 optional OSB package | $8,016 × 10 | Authored substitution-price prop; not an approved selection |
+
+The $8,200 single-house recommendation and its verified $231.73 reduction remain
+the separate live result. The staged ten-home amounts are not measured savings,
+current inventory commitments, confirmed delivery capacity, or authorization to
+change plywood to OSB. No order, payment, or dispatch is represented.
+
+The separate [ten-home contractor request](../examples/procurement/contractor-ten-home-request.txt)
+preserves all 25 material types and multiplies order quantities and coverage by
+ten, while retaining dimensions and package sizes. It carries forward the prior
+human answers for unfaced insulation and DemoPEX expansion fittings. It is a
+representative consolidated package, not a complete bill of materials for ten
+homes. Operating that request requires a fresh supplier scenario, fresh quotes,
+and explicit stock and delivery-capacity checks; multiplying the earlier totals
+does not satisfy those requirements. The original single-house source and run
+remain separate records.

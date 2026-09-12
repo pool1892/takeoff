@@ -13,7 +13,44 @@ owners are the existing human contractor identity (presented as Bill) or nobody;
 the contractor is also a project member and task subscriber. The script does not
 rename the user's account or assign background tasks to Chip.
 
-Preview the complete authored content locally, without credentials or API calls:
+Four companion Markdown documents live in
+[`examples/workspace/documents/`](../examples/workspace/documents/): Sunset
+rough-in and cabinet coordination, Bernal ADU access and foundation readiness,
+Richmond bathroom finish decisions and pre-tile checks, and Bill's September
+14–18 week-ahead brief. They use the same project names, owners, dates, and open
+dependencies as the task examples. Bill is the project lead in the authored
+content; the Ambiguous API records the actual identity that creates each copy.
+The week-ahead brief carries the single discreet link to the shared demo context.
+
+The separate original contractor material request comes from
+[`examples/procurement/contractor-house-request.txt`](../examples/procurement/contractor-house-request.txt).
+Its workspace copy identifies Chip as the copying agent, links the procurement
+task, and keeps the original wording in a verbatim block. It is a source record,
+not an additional authored background note or a new buying recommendation.
+
+## Workspace publication checkpoint
+
+The original request copy, four background documents, and three background
+spreadsheets have been created and verified in Ambiguous. A separate native
+procurement spreadsheet created by Chip is also verified. The three background
+spreadsheets provide project planning context; they do not establish purchased
+materials, passed inspections, or construction performed by Chip.
+
+Three actual supplier messages were forwarded to the operator's inbox. Raw
+forwarding drafts intended for the shared contractor inbox were not sent at this
+checkpoint. Human-style procurement correspondence for that inbox is being
+prepared separately as staged presentation material. Its ten-home prices,
+derivation, and limits are recorded centrally in
+[demo context](demo-context.md#ten-home-presentation-correspondence).
+
+The [ten-home contractor request](../examples/procurement/contractor-ten-home-request.txt)
+is a separate prepared source. It requires fresh quotes for the larger quantities;
+neither the background records nor the staged correspondence establish a completed
+ten-home buying run.
+
+## Project and task seed commands
+
+Preview the authored projects and tasks locally, without credentials or API calls:
 
 ```sh
 python integrations/ambiguous/seed_workspace.py --preview
@@ -42,4 +79,5 @@ runtime journal and do not run independent copies concurrently. Credentials come
 from the existing bridge API environment and are never printed.
 
 After applying, rerun `--check`; an empty operations list confirms the seed and
-visibility records are present. No workspace changes are implied by this document.
+visibility records are present. These commands seed projects and tasks; the
+document, spreadsheet, and mail publication checkpoint above is reported separately.

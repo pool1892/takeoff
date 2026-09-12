@@ -338,7 +338,9 @@ evidence and all commercial conditions; an actual recorded replay remains a repl
 
 Tool entry: python /workspace/buyer/cli.py --task-id TASK_ID COMMAND --input JSON_FILE
 Use snapshot (no --input) first to inspect current persisted state. Keep temporary
-JSON files inside /opt/data/workspace. Available commands:
+JSON files inside /workspace/.local/hermes/workspace, the canonical writable root.
+Use terminal tools to read and write files and run this CLI. The /opt/data/workspace
+alias is rejected by the Hermes file-write guard. Available commands:
 evidence: {id:<source ID>} reads one preserved supplier mail/catalog/contractor source.
 Snapshots intentionally omit large bodies. Use evidence IDs for the sources you need;
 do not dump the entire internal state file or repeatedly refetch unchanged catalogs.
@@ -422,6 +424,7 @@ correct your input or explain the specific missing fact rather than bypass valid
         query.write(prompt)
         query.flush()
         command = ['/opt/hermes/.venv/bin/hermes', 'chat', '--oneshot', '-Q', '--ignore-rules',
+                   '--toolsets', 'terminal',
                    '--model', 'gpt-5.6-sol', '--provider', 'takeoff-openai',
                    '--reasoning', 'medium', '--max-turns', '24', '--run-budget', '240', '--query-file', query.name]
         if state.get('hermes_session_id'):

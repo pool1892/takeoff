@@ -32,6 +32,9 @@ class BuyerModelConfigTests(unittest.TestCase):
                     self.assertEqual(command[command.index('--reasoning') + 1], 'medium')
                     if module is procurement:
                         self.assertEqual(command[command.index('--resume') + 1], 'stored-sol-session')
+                        self.assertEqual(command[command.index('--toolsets') + 1], 'terminal')
+                    else:
+                        self.assertNotIn('--toolsets', command)
 
 
 if __name__ == '__main__':

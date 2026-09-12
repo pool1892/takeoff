@@ -14,6 +14,13 @@ then an operator-assisted [full 25-material recommendation](docs/runs/2026-09-12
 for **$8,200 delivered** after a confirmed **$231.73 negotiation reduction**. Three
 suppliers were compared; the meaningful contractor substitution decision remains open.
 
+The buyer workspace also contains the original request, a native procurement
+spreadsheet created by Chip, and residential project background. Larger ten-home
+email amounts are staged presentation correspondence derived by scaling scenario
+figures; they are separate from the verified single-house result. See the
+[demo context](docs/demo-context.md#ten-home-presentation-correspondence) for provenance
+and the fresh-quote requirements of the larger package.
+
 ## Start here
 
 - [Issues: the current build plan](https://github.com/pool1892/takeoff/issues)
