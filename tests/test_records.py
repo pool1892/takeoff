@@ -49,6 +49,8 @@ def test_readable_catalog_and_sheet_match_documented_payload(tmp_path):
     assert set(body) == {"type", "title", "content", "visibility", "labels"}
     assert body["type"] == "doc" and body["visibility"] == "workspace"
     assert "publication-time" in body["content"]
+    assert "[Simulated]" not in body["title"]
+    assert "demo-context.md" in body["content"]
     assert "Product specifications" in body["content"]
     assert "private" not in body["content"]
     assert "unit_cost" not in body["content"]
@@ -59,6 +61,7 @@ def test_readable_catalog_and_sheet_match_documented_payload(tmp_path):
     assert sent[1].url.path == "/api/sheets"
     sheet_body = json.loads(sent[1].content)
     assert set(sheet_body) == {"title", "content", "visibility", "labels"}
+    assert "Catalog snapshot" in sheet_body["title"]
     tab = sheet_body["content"]["tabs"][0]
     assert set(tab) == {"name", "columns", "rows"}
     assert all(column["type"] == "text" for column in tab["columns"])
@@ -78,6 +81,8 @@ def test_issued_and_accepted_records_are_distinct_and_sanitized(tmp_path):
     issued = publisher.publish_offer(contaminated)
     assert "NEVER-PUBLISH" not in sent[0].content.decode()
     assert quoted["total"] in json.loads(sent[0].content)["content"]
+    assert "[Simulated]" not in json.loads(sent[0].content)["title"]
+    assert '"simulated": true' in json.loads(sent[0].content)["content"]
     accepted_offer = market.accept_offer(run["id"], quoted["quote_id"], "buyer")
     accepted = publisher.publish_offer(accepted_offer)
     assert accepted["id"] != issued["id"]

@@ -44,12 +44,16 @@ class ApprovalInput(Input):
 
 
 def create_app(market: Any, operator_token: str, buyer_token: str,
-               buyer_id: str = "demo-buyer") -> FastAPI:
+               buyer_id: str = "demo-buyer", *, public_run_id: str | None = None,
+               public_vendor_contacts: dict[str, dict[str, str]] | None = None) -> FastAPI:
     """Create an app for one configured buyer; tokens must be distinct and nonempty."""
     if not operator_token or not buyer_token or operator_token == buyer_token:
         raise ValueError("Distinct nonempty operator and buyer tokens are required")
     app = FastAPI(title="Takeoff supplier market", version="1.0.0")
     sessions: dict[str, tuple[str, float]] = {}
+    if public_run_id is not None and market.get_run(public_run_id)["buyer_id"] != buyer_id:
+        raise ValueError("Public discovery run must belong to the configured buyer")
+    contacts = public_vendor_contacts or {}
 
     def same_secret(left: str, right: str) -> bool:
         # compare_digest(str, str) rejects non-ASCII attacker-controlled inputs.
@@ -124,14 +128,32 @@ def create_app(market: Any, operator_token: str, buyer_token: str,
             "textarea{width:90%;min-height:90px}button{background:#18372c;color:white;border:0;border-radius:4px;cursor:pointer}"
             "a{color:#176742}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:8px;border-bottom:1px solid #ddd}"
             "pre{white-space:pre-wrap;overflow-wrap:anywhere}.muted{color:#53665c}</style>"
-            "<header><strong>TAKEOFF / SUPPLIER MARKET</strong><p class='muted'>Simulated businesses · inspectable terms · no real orders</p></header>"
-            f"<h1>{esc(title)}</h1>{content}</html>")
+            "<header><strong>TAKEOFF / SUPPLIER MARKET</strong></header>"
+            f"<h1>{esc(title)}</h1>{content}"
+            "<footer><small><a href='https://github.com/pool1892/takeoff/blob/codex/supplier-epic/docs/demo-context.md'>About this demo</a></small></footer></html>")
 
     def esc(value: Any) -> str:
         return html.escape(str(value), quote=True)
 
     def evidence(value: Any) -> str:
-        return "<pre>" + esc(json.dumps(value, indent=2, default=str)) + "</pre>"
+        def presentation(item: Any) -> Any:
+            # Keep provenance in the API and repository; business pages show
+            # the commercial terms without repeating the environment label.
+            if isinstance(item, dict):
+                return {key: presentation(val) for key, val in item.items()
+                        if key not in {"simulated", "scenario_label", "evidence_kind", "live_transport_verified"}}
+            if isinstance(item, list):
+                return [presentation(val) for val in item
+                        if val != "Simulated offer; no real purchase is made."]
+            if isinstance(item, str):
+                return (item.replace("simulated catalog and terms", "catalog and terms")
+                        .replace("Prepare simulated material package", "Prepare material package")
+                        .replace("simulated_commitment", "recorded")
+                        .replace("all_fixture_taxes_included", "Taxes included")
+                        .replace("unknown/not_modeled", "Tax treatment not specified"))
+            return item
+
+        return "<pre>" + esc(json.dumps(presentation(value), indent=2, default=str)) + "</pre>"
 
     def hidden(csrf: str) -> str:
         return f"<input type='hidden' name='csrf' value='{esc(csrf)}'>"
@@ -143,6 +165,78 @@ def create_app(market: Any, operator_token: str, buyer_token: str,
     @app.exception_handler(Exception)
     async def error_handler(request: Request, exc: Exception):
         return JSONResponse({"error": "internal_error", "message": "Supplier service failed"}, status_code=500)
+
+    def public_run() -> dict:
+        if public_run_id is None:
+            raise HTTPException(404, "Public discovery is not enabled")
+        return owns(public_run_id)
+
+    def discovery_vendors() -> list[dict]:
+        vendors = []
+        for vendor in public_run()["vendors"]:
+            vid = vendor["id"]
+            contact = {k: v for k, v in contacts.get(vid, {}).items()
+                       if k in {"email", "website", "agent_email"} and isinstance(v, str) and v}
+            vendors.append({**vendor, "contact": contact,
+                            "catalog_url": f"/public/vendors/{quote(vid, safe='')}/catalog",
+                            "website_url": f"/public/vendors/{quote(vid, safe='')}"})
+        return vendors
+
+    @app.get("/public/manifest")
+    def public_manifest():
+        run = public_run()
+        return {"schema_version": "takeoff.public-discovery.v1", "run_id": run["id"],
+                "scenario_version": run["scenario_version"], "simulated": True,
+                "vendors": discovery_vendors(), "vendors_url": "/public/vendors",
+                "website_url": "/public",
+                "interaction": "Catalog discovery is public. Use the supplier email contacts to negotiate; "
+                               "HTTP inquiries, offers, and acceptance require buyer authentication."}
+
+    @app.get("/public/vendors")
+    def public_vendors():
+        return {"run_id": public_run()["id"], "simulated": True, "vendors": discovery_vendors()}
+
+    @app.get("/public/vendors/{vendor_id}/catalog")
+    def public_catalog(vendor_id: str, query: str = "", q: str | None = None):
+        run = public_run()
+        return {"run_id": run["id"], **market.catalog(run["id"], vendor_id, query=query or q or "")}
+
+    @app.get("/public", response_class=HTMLResponse)
+    def public_directory():
+        content = "<p>Browse products and delivery terms, then contact the supplier to negotiate.</p>"
+        for vendor in discovery_vendors():
+            content += (f"<article><h2><a href='{vendor['website_url']}'>{esc(vendor['name'])}</a></h2>"
+                        f"<p>{esc(vendor['description'])}</p><p>Channel: {esc(vendor['channel'])}</p>"
+                        + evidence(vendor['contact']) + "</article>")
+        return page("Supplier directory", content + "<a href='/public/manifest'>Machine-readable discovery manifest</a>")
+
+    @app.get("/public/vendors/{vendor_id}", response_class=HTMLResponse)
+    def public_vendor_page(vendor_id: str, query: str = ""):
+        run = public_run()
+        data = market.catalog(run["id"], vendor_id, query=query)
+        vendor = next(v for v in discovery_vendors() if v["id"] == vendor_id)
+        content = ("<a href='/public'>All suppliers</a>" + evidence(vendor['contact']) +
+                   f"<form method='get'><label>Search products <input name='query' value='{esc(query)}'></label>"
+                   "<button>Search</button></form>")
+        for product in data['products']:
+            path = f"/public/vendors/{quote(vendor_id, safe='')}/products/{quote(product['id'], safe='')}"
+            content += (f"<article><h2><a href='{path}'>{esc(product['name'])}</a></h2>"
+                        f"<p>{esc(product['id'])} · {esc(data['currency'])} {esc(product['list_price'])} "
+                        f"per {esc(product['unit'])} · stock {esc(product['stock'])}</p>"
+                        f"<p>Pack size {esc(product['pack_size'])}; minimum {esc(product['minimum_quantity'])}.</p>"
+                        + evidence(product['specifications']) + "</article>")
+        content += "<h2>Delivery and package conditions</h2>" + evidence({
+            'delivery_slots': data['delivery_slots'], 'discounts': data['discounts']})
+        return page(data['vendor']['name'], content)
+
+    @app.get("/public/vendors/{vendor_id}/products/{product_id}", response_class=HTMLResponse)
+    def public_product_page(vendor_id: str, product_id: str):
+        data = market.catalog(public_run()["id"], vendor_id)
+        product = next((p for p in data['products'] if p['id'] == product_id), None)
+        if product is None:
+            raise HTTPException(404, "Product not found")
+        return page(product['name'], evidence(product) +
+                    f"<a href='/public/vendors/{quote(vendor_id, safe='')}'>Supplier contact and delivery terms</a>")
 
     @app.get("/health")
     def health():
@@ -324,7 +418,7 @@ def create_app(market: Any, operator_token: str, buyer_token: str,
                 decisions += f"<label><input type='checkbox' name='approve:{esc(line['product_id'])}' value='yes'> I explicitly approve {esc(line['product_id'])} instead of requirement {esc(line['substitution_for'])}.</label>"
         actions = ""
         if result["status"] == "issued":
-            actions = f"<form method='post' action='/runs/{quote(run_id)}/offers/{quote(quote_id)}/accept'>{hidden(csrf)}{decisions}<button>Accept these exact terms (simulated)</button></form><form method='post' action='/runs/{quote(run_id)}/offers/{quote(quote_id)}/reject'>{hidden(csrf)}<button>Reject this offer</button></form>"
+            actions = f"<form method='post' action='/runs/{quote(run_id)}/offers/{quote(quote_id)}/accept'>{hidden(csrf)}{decisions}<button>Accept these exact terms</button></form><form method='post' action='/runs/{quote(run_id)}/offers/{quote(quote_id)}/reject'>{hidden(csrf)}<button>Reject this offer</button></form>"
         return page("Inspect offer", evidence(result) + actions + f"<a href='/runs/{quote(run_id)}'>Continue comparing suppliers</a>")
 
     @app.post("/runs/{run_id}/offers/{quote_id}/accept")

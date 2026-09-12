@@ -177,3 +177,54 @@ def test_market_errors_are_handled_without_server_exception_reraise(setup):
     assert response.status_code == 400
     assert response.json()["error"] == "invalid_input"
     assert response.headers["cache-control"] == "no-store"
+
+
+def test_public_discovery_requires_explicit_opt_in(setup):
+    _, _, client = setup
+    for path in ('/public', '/public/manifest', '/public/vendors', '/public/vendors/general/catalog'):
+        assert client.get(path).status_code == 404
+
+
+def test_public_discovery_is_run_scoped_readonly_and_redacts_contacts(tmp_path):
+    market = Market(tmp_path / 'public.sqlite')
+    run = market.create_run('demo-buyer')
+    other = market.create_run('another-buyer')
+    app = create_app(market, 'operator-secret', 'buyer-secret', public_run_id=run['id'],
+                     public_vendor_contacts={'general': {'email': 'supplier@example.test',
+                                                        'token_env': 'PRIVATE_TOKEN_NAME',
+                                                        'api_key': 'DO_NOT_EXPOSE',
+                                                        'user_id': 'PRIVATE_USER_ID'}})
+    client = TestClient(app)
+    manifest = client.get('/public/manifest')
+    assert manifest.status_code == 200
+    assert manifest.json()['run_id'] == run['id']
+    assert manifest.json()['vendors'][0]['contact'] == {'email': 'supplier@example.test'}
+    for private in ('DO_NOT_EXPOSE', 'PRIVATE_USER_ID', 'PRIVATE_TOKEN_NAME', 'floor_price', 'cost_price'):
+        assert private not in manifest.text
+    catalog = client.get('/public/vendors/general/catalog', params={'run_id': other['id']})
+    assert catalog.status_code == 200
+    assert catalog.json()['run_id'] == run['id']
+    assert other['id'] not in catalog.text
+    for private in ('floor_price', 'cost_price', 'reservation_price', 'private_rules'):
+        assert private not in catalog.text
+    product = catalog.json()['products'][0]
+    filtered = client.get('/public/vendors/general/catalog', params={'query': product['id']})
+    assert [p['id'] for p in filtered.json()['products']] == [product['id']]
+    assert client.post('/public/vendors/general/catalog', json={}).status_code == 405
+    assert client.post(f"/v1/runs/{run['id']}/vendors/general/offers", json={}).status_code == 401
+    assert client.post(f"/v1/runs/{run['id']}/vendors/general/inquiries", json={'message':'Quote please'}).status_code == 401
+    assert client.get(f"/v1/runs/{other['id']}/vendors/general/catalog").status_code == 401
+    assert client.get('/public').status_code == 200
+    page = client.get('/public/vendors/general')
+    assert page.status_code == 200
+    assert 'supplier@example.test' in page.text
+    assert 'Request validated offer' not in page.text
+    assert client.get('/public/vendors/general/products/' + product['id']).status_code == 200
+    assert client.get('/public/vendors/general/products/not-a-product').status_code == 404
+
+
+def test_public_run_must_belong_to_configured_buyer(tmp_path):
+    market = Market(tmp_path / 'public.sqlite')
+    run = market.create_run('another-buyer')
+    with pytest.raises(ValueError, match='configured buyer'):
+        create_app(market, 'operator', 'buyer', public_run_id=run['id'])
