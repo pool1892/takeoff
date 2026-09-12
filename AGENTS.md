@@ -141,6 +141,13 @@ work without coordinating. Human issue assignees remain accountable even when co
 agents execute subtasks. Keep each agent's write ownership clear and preserve others'
 changes; do not reset, clean, or overwrite work to simplify integration.
 
+During today's hackathon, check the implementation AgentMail inbox
+**christoph-6932@agentmail.to** about once a minute while work is active, through
+the connector or a bounded read-only watcher. Bring supplier-agent replies into
+the active integration work promptly. This is coding-agent coordination, separate
+from Chip's Ambiguous procurement identity. If all coding slots are needed, the
+main implementer takes over polling rather than reserving a worker solely to wait.
+
 ## How to work at hackathon pace
 
 - Build the smallest real request-to-result journey first, then expand. Connect early;
