@@ -1,7 +1,7 @@
 # Copied once to .local/hermes/config.yaml by scripts/hermes init.
 model:
   provider: takeoff-openai
-  default: gpt-5.6-sol
+  default: gpt-5.6-luna
 providers:
   takeoff-openai:
     base_url: https://api.openai.com/v1
@@ -17,7 +17,17 @@ terminal:
   timeout: 120
 agent:
   max_turns: 30
-  reasoning_effort: high
+  reasoning_effort: max
   service_tier: fast
 platform_toolsets:
   cli: [terminal, file, web, skills, todo, memory]
+compression:
+  enabled: true
+  in_place: true
+  threshold_tokens: 60000
+  target_ratio: 0.20
+  tail_mode: legacy
+  protect_first_n: 0
+  protect_last_n: 4
+  min_tail_user_messages: 1
+  proactive_prune_tokens: 24000

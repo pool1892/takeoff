@@ -11,6 +11,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import re
 import sys
 import urllib.parse
 import urllib.request
@@ -105,13 +106,39 @@ def all_products(value):
             yield from all_products(child)
 
 
+def snapshot(state):
+    """Small working index; immutable large source bodies are read by evidence ID."""
+    result = {key: deepcopy(state.get(key)) for key in ('task_id', 'run_id', 'request_revision', 'source',
+        'phase', 'paused', 'authority', 'constraints', 'requirements', 'suppliers', 'catalog_urls',
+        'remaining_actions', 'approvals', 'hermes_session_id')}
+    result['products'] = [{key: p.get(key) for key in ('id', 'name', 'requirement_id', 'revision', 'source')}
+                          for p in state.get('products', {}).values()]
+    result['candidates'] = [{key: c.get(key) for key in ('id', 'requirement_id', 'product_id', 'product_revision',
+        'status', 'missing_evidence', 'mismatches', 'quantity')} for c in state.get('candidates', {}).values()]
+    result['quotes'] = [{key: q.get(key) for key in ('quote_id', 'id', 'vendor_id', 'revision', 'total',
+        'currency', 'status', 'expires_at')} for q in state.get('quotes', {}).values()]
+    result['evidence'] = [{key: e.get(key) for key in ('id', 'channel', 'vendor_id', 'subject', 'url', 'observed_at')}
+                          for e in state.get('evidence', {}).values()]
+    result['actions'] = [{'id': a['id'], 'status': a.get('status'), 'input': a.get('input'),
+                          'mail_id': a.get('result', {}).get('id')} for a in state.get('actions', {}).values()]
+    result['proposals'] = [{k: v for k, v in p.items() if k != 'input'} for p in state.get('proposals', {}).values()]
+    result['recent_events'] = [{k: v for k, v in e.items() if k != 'content'} | (
+        {'content': e.get('content')} if e['type'] in ('operator_reconciled', 'turn_error', 'decision_unresolved') else {})
+        for e in state.get('events', [])[-8:]]
+    if state.get('plan'):
+        result['plan'] = {key: state['plan'].get(key) for key in ('complete', 'total_payable', 'blockers', 'coverage')}
+    return result
+
+
 def execute(command, payload, state, persist, api):
     if not state:
         raise ValueError('Task has not been admitted by the procurement listener')
     if state.get('paused') and command not in ('snapshot', 'publish'):
         raise ValueError('Task is paused or its source changed; await reconciliation')
     if command == 'snapshot':
-        return state
+        return snapshot(state)
+    if command == 'evidence':
+        return state['evidence'][payload['id']]
     if command == 'requirements':
         requirements = payload['requirements']
         if not isinstance(requirements, list) or not requirements:
@@ -145,14 +172,15 @@ def execute(command, payload, state, persist, api):
         requirement = next(r for r in state['requirements'] if r['id'] == payload['requirement_id'])
         source = state.get('evidence', {}).get(payload['source_id'], {})
         actual = source.get('data', {})
-        if (source.get('channel') != 'contractor_comment' or (actual.get('author') or {}).get('id') != CONTRACTOR
+        if (source.get('channel') != 'contractor_comment' or source.get('unavailable') or (actual.get('author') or {}).get('id') != CONTRACTOR
                 or actual.get('deleted_at') or actual.get('edited_at')
                 or actual.get('updated_at') not in (None, actual.get('created_at'))):
             raise ValueError('Clarification requires the current unedited contractor comment')
         key, attribute, value = payload['key'], payload['specification_attribute'], payload['value']
         if key not in ('facing', 'fitting_system') or attribute != {'facing': 'facing', 'fitting_system': 'connection_system'}[key]:
             raise ValueError('Clarify currently supports the documented facing and fitting essentials')
-        if not isinstance(value, str) or not value.strip() or value.casefold() not in actual.get('content', '').casefold():
+        if (not isinstance(value, str) or not value.strip()
+                or not re.search(r'(?<!\w)' + re.escape(value) + r'(?!\w)', actual.get('content', ''), re.I)):
             raise ValueError('Clarification value must be explicitly present in the contractor answer')
         existing = requirement.setdefault('clarifications', {}).get(key)
         if existing:
@@ -228,7 +256,7 @@ def execute(command, payload, state, persist, api):
                 if key in action:
                     envelope[key] = action[key]
             body = {'to': [supplier['email']], 'subject': f"Takeoff {state['run_id']} {action_id}",
-                'body_text': json.dumps(envelope), 'idempotency_key': 'takeoff-' + state['task_id'] + '-' + action_id,
+                'body_markdown': json.dumps(envelope), 'idempotency_key': 'takeoff-' + state['task_id'] + '-' + action_id,
                 'undo_send_seconds': 0, 'include_signature': False}
             state['actions'][action_id] = {'id': action_id, 'input': payload, 'body': body, 'status': 'sending', 'at': store.now()}
             state['remaining_actions'] = state.get('remaining_actions', 40) - 1
@@ -324,7 +352,7 @@ def current_quotes(state):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--task-id', required=True)
-    parser.add_argument('command', choices=['snapshot', 'requirements', 'clarify', 'catalog', 'assess', 'send', 'offer', 'decision', 'plan', 'publish'])
+    parser.add_argument('command', choices=['snapshot', 'evidence', 'requirements', 'clarify', 'catalog', 'assess', 'send', 'offer', 'decision', 'plan', 'publish'])
     parser.add_argument('--input', help='JSON file; omit for JSON stdin, except snapshot')
     args = parser.parse_args()
     if os.environ.get('TAKEOFF_SANDBOX') != '1' or not Path('/.dockerenv').exists():

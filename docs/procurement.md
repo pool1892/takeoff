@@ -7,14 +7,20 @@ constraints, calculations, and authority; they do not select a bargaining tactic
 or price. Supplier sends use Ambiguous email, and contractor progress, decisions,
 and recommendations appear as comments on the originating Ambiguous task.
 
-This documents implemented behavior, not completion of the live procurement
-journey. The first integration slice uses actual task
+The first live integration slice completed at **14:35 PDT on September 12, 2026**,
+using actual task
 `285b8a73-572a-4e0a-9509-f97cf994f6f6` and fresh supplier run
 `run_402632f04bb94032b83ffa8ecd69f96f`. It covers the first three source lines;
 it does not establish completion of the 25-component house package. The task was
 created under Chip for integration testing, not authored by the contractor.
-Supplier businesses and material data are simulated; successful remote exchanges
-and contractor answers still require their own recorded evidence.
+Hermes received the remote supplier's canonical issued quote
+`quote_d7479895425441aa89b8ddb47946ddcc` revision 1, validated all three lines at
+**USD 2,300 delivered**, published the recommendation, and completed the task.
+The buyer chose its initial $2,300 proposal and stopped when the supplier matched
+it; this run does not demonstrate a post-quote counteroffer or substitution approval.
+Two earlier emails reached the recipient without their intended content and are
+retained as failed attempts. No order was placed. See [demo context](demo-context.md)
+for scenario provenance and the distinction between live channels and material data.
 
 ## Enable an actual task
 
@@ -74,21 +80,24 @@ python /workspace/buyer/cli.py --task-id TASK_UUID COMMAND --input /opt/data/wor
 ```
 
 From the host, prefix the Python command with `scripts/hermes exec`. Every command
-except `snapshot` takes JSON from `--input` or stdin. Snapshot is private working
-state, not a contractor-facing artifact. Use the actual task UUID for `--task-id`;
+except `snapshot` takes JSON from `--input` or stdin. Snapshot is a compact private
+working index; fetch an individual preserved source with `evidence` instead of
+repeating entire catalogs and message bodies in every model turn. Use the actual task UUID for `--task-id`;
 use the separate supplier run ID and current request revision from the snapshot
 inside action/proposal payloads. IDs must remain stable across retries.
 
 | Command | JSON input and effect |
 | --- | --- |
+| `evidence` | `{"id":"SOURCE_ID"}` retrieves one complete preserved source from the snapshot's evidence index. |
 | `requirements` | `{"requirements":[{"id":"house-01","source_text":"original line","quantity":12,"unit":"sheet","specifications":{},"missing_essentials":[]}],"constraints":{}}` records source-derived requirements. Optional `budget_cap` records an explicit positive hard budget; constraints may include `delivery_deadline` and `delivery_zone`. Never invent a budget or erase an ambiguous specification. |
 | `catalog` | `{"url":"CONFIRMED_PUBLIC_CATALOG_URL"}` fetches JSON and saves public product/source evidence. |
+| `clarify` | `{"requirement_id":"house-10","key":"facing","specification_attribute":"facing","value":"unfaced","source_id":"ACTUAL_CONTRACTOR_COMMENT"}` records a missing essential only from the actual unedited contractor answer. Fitting clarification uses `fitting_system` and `connection_system`. These values are syntax examples, not supplied contractor answers. |
 | `assess` | `{"requirement_id":"house-01","product_id":"DISCOVERED_PRODUCT_ID"}` checks specifications, pack conversions, minimum quantity, stock, and approvals. |
 | `send` | Inquiry/counter object below. Checks authority, known supplier, current quote references, numeric terms, and action limits before sending an idempotent email. |
 | `offer` | `{"source_id":"RECEIVED_EVIDENCE_ID","quote":{}}`, replacing `{}` with the **exact full supplier quote object** already present in saved evidence. Preserves raw terms and returns normalization results; unknown fees/taxes or invalid arithmetic remain blockers. |
 | `decision` | Proposal/question object below. Validates the substitution against current evidence, saves it before publication, and posts the exact proposed scope. |
 | `plan` | `{"quote_ids":["CURRENT_QUOTE_ID"]}` checks the selected whole packages, coverage, approved products, stock, delivery, fees, conditions, and budget. Hermes chooses which packages to evaluate. |
-| `publish` | `{"id":"result-1","plan":true}` posts the saved evaluated explanation, or `{"id":"progress-1","content":"Factual progress"}` posts a task comment. It does not place an order or mark the task done. |
+| `publish` | `{"id":"result-1","plan":true}` freshly validates and posts the saved evaluated explanation. Adding `"final":true` marks the task done only if its plan is complete. `{"id":"progress-1","content":"Factual progress"}` posts a progress comment. Neither action places an order. |
 
 An inquiry has this shape; all values below are illustrative:
 
@@ -147,6 +156,12 @@ saved body/idempotency key and do not consume another action. Comment publicatio
 has no assumed server idempotency: recovery requires one matching recent unedited
 comment; absent or ambiguous matches stop for reconciliation. Never change an ID
 or delete a saved transmission to force a retry.
+
+Supplier sends must use `body_markdown`: the live service accepted a `body_text`
+payload but delivered tracking-only messages. Those first failed attempts remain
+in the run evidence. Incoming list rows can omit bodies even with `detail=full`;
+hydrate the individual message and extract text from HTML when necessary. Send
+receipts prove acceptance by the mail service, not successful supplier processing.
 
 A changed task title/description pauses procurement as `source_changed`.
 An interrupted generating turn pauses as `interrupted`; a failed/timed-out turn
