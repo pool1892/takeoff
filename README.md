@@ -6,8 +6,8 @@ A general contractor gives Takeoff a procurement task. It finds suitable product
 gathers offers, negotiates within a bounded scenario, asks about consequential
 tradeoffs, and returns a recommendation the contractor can inspect.
 
-This is our September 12, 2026 hackathon project. The current repository contains
-the shared project setup; product implementation follows the GitHub plan.
+This is our September 12, 2026 hackathon project. The supplier implementation
+provides a resettable market, a website, and Ambiguous communication adapters.
 
 ## Start here
 
@@ -96,9 +96,10 @@ relevant skill. Start a fresh session after cloning or changing discovery setup.
 
 Clone this repository normally; preserve its relative symlinks. Use an isolated
 Takeoff Hermes home and the new workspace references being provisioned by the
-team. `.env.example` describes local configuration hygiene; exact adapter
-variables and run commands will be documented when those integrations exist.
+team. See the [supplier setup and buyer handoff](docs/suppliers/README.md) for
+installation, authentication, run commands, and channel examples.
 
 Keep local environments, credentials, runtime state, and raw captures out of Git.
 Commit shared code, instructions, intentionally sanitized fixtures, and concise
-run instructions. There are no product install or run commands to claim yet.
+run instructions. Buyer connection and cross-computer verification remain separate
+from the local supplier setup.

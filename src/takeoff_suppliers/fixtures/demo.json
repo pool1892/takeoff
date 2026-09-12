@@ -1,0 +1,640 @@
+{
+  "id": "sample-house-package",
+  "version": "sample-1",
+  "label": "Synthetic development fixture — replace and freeze before scored trials",
+  "simulated": true,
+  "currency": "USD",
+  "quote_ttl_seconds": 900,
+  "requirements": [
+    {
+      "id": "stud",
+      "name": "Structural framing timber",
+      "unit": "each",
+      "quantity": 60,
+      "specifications": {
+        "section_mm": "38 × 89",
+        "length_mm": 2440,
+        "grade": "C24"
+      }
+    },
+    {
+      "id": "sheathing",
+      "name": "Structural sheathing",
+      "unit": "sheet",
+      "quantity": 20,
+      "specifications": {
+        "material": "OSB",
+        "thickness_mm": 11
+      }
+    },
+    {
+      "id": "insulation",
+      "name": "Wall insulation",
+      "unit": "pack",
+      "quantity": 10,
+      "specifications": {
+        "material": "mineral wool",
+        "thermal_rating": "R13"
+      }
+    },
+    {
+      "id": "drywall",
+      "name": "Interior wall board",
+      "unit": "sheet",
+      "quantity": 30,
+      "specifications": {
+        "thickness_mm": 12.5,
+        "dimensions_mm": "1200 × 2400"
+      }
+    },
+    {
+      "id": "screws",
+      "name": "Exterior fasteners",
+      "unit": "box",
+      "quantity": 8,
+      "specifications": {
+        "length_mm": 50,
+        "finish": "galvanized",
+        "count_per_box": 100
+      }
+    },
+    {
+      "id": "membrane",
+      "name": "Breather membrane",
+      "unit": "roll",
+      "quantity": 2,
+      "specifications": {
+        "coverage_m2": 100,
+        "type": "breathable"
+      }
+    },
+    {
+      "id": "concrete",
+      "name": "Concrete mix",
+      "unit": "bag",
+      "quantity": 30,
+      "specifications": {
+        "mass_kg": 25
+      }
+    },
+    {
+      "id": "underlay",
+      "name": "Roof underlayment",
+      "unit": "roll",
+      "quantity": 3,
+      "specifications": {
+        "coverage_m2": 20
+      }
+    }
+  ],
+  "vendors": [
+    {
+      "id": "general",
+      "name": "General Building Supply",
+      "channel": "website",
+      "description": "A broad range of fixed-price material packages.",
+      "objective": "Supply a complete order at published package terms.",
+      "slots": [
+        {
+          "id": "standard",
+          "label": "Standard delivery",
+          "days": 4,
+          "fee": "45.00",
+          "capacity": 500
+        }
+      ],
+      "private": {
+        "max_discount_percent": "0",
+        "min_margin_percent": "10",
+        "delivery_cost": "25"
+      },
+      "products": [
+        {
+          "id": "general-stud",
+          "name": "Structural framing timber",
+          "requirement_id": "stud",
+          "specifications": {
+            "section_mm": "38 × 89",
+            "length_mm": 2440,
+            "grade": "C24"
+          },
+          "unit": "each",
+          "pack_size": 1,
+          "stock": 240,
+          "list_price": "6.00",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "3.72"
+          }
+        },
+        {
+          "id": "general-sheathing",
+          "name": "Structural sheathing",
+          "requirement_id": "sheathing",
+          "specifications": {
+            "material": "OSB",
+            "thickness_mm": 11
+          },
+          "unit": "sheet",
+          "pack_size": 1,
+          "stock": 80,
+          "list_price": "22.00",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "13.64"
+          }
+        },
+        {
+          "id": "general-insulation",
+          "name": "Wall insulation",
+          "requirement_id": "insulation",
+          "specifications": {
+            "material": "mineral wool",
+            "thermal_rating": "R13"
+          },
+          "unit": "pack",
+          "pack_size": 1,
+          "stock": 40,
+          "list_price": "35.00",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "21.70"
+          }
+        },
+        {
+          "id": "general-drywall",
+          "name": "Interior wall board",
+          "requirement_id": "drywall",
+          "specifications": {
+            "thickness_mm": 12.5,
+            "dimensions_mm": "1200 × 2400"
+          },
+          "unit": "sheet",
+          "pack_size": 1,
+          "stock": 120,
+          "list_price": "15.00",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "9.30"
+          }
+        },
+        {
+          "id": "general-screws",
+          "name": "Exterior fasteners",
+          "requirement_id": "screws",
+          "specifications": {
+            "length_mm": 50,
+            "finish": "galvanized",
+            "count_per_box": 100
+          },
+          "unit": "box",
+          "pack_size": 1,
+          "stock": 32,
+          "list_price": "12.00",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "7.44"
+          }
+        },
+        {
+          "id": "general-membrane",
+          "name": "Breather membrane",
+          "requirement_id": "membrane",
+          "specifications": {
+            "coverage_m2": 100,
+            "type": "breathable"
+          },
+          "unit": "roll",
+          "pack_size": 1,
+          "stock": 8,
+          "list_price": "80.00",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "49.60"
+          }
+        },
+        {
+          "id": "general-concrete",
+          "name": "Concrete mix",
+          "requirement_id": "concrete",
+          "specifications": {
+            "mass_kg": 25
+          },
+          "unit": "bag",
+          "pack_size": 1,
+          "stock": 120,
+          "list_price": "8.00",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "4.96"
+          }
+        },
+        {
+          "id": "general-underlay",
+          "name": "Roof underlayment",
+          "requirement_id": "underlay",
+          "specifications": {
+            "coverage_m2": 20
+          },
+          "unit": "roll",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "55.00",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "34.10"
+          }
+        }
+      ],
+      "discounts": []
+    },
+    {
+      "id": "overstock",
+      "name": "Second Shift Materials",
+      "channel": "email",
+      "description": "Selected lines, clearance bundles, and negotiable quantities.",
+      "objective": "Prefer orders that combine available sheathing and wallboard.",
+      "slots": [
+        {
+          "id": "standard",
+          "label": "Standard delivery",
+          "days": 5,
+          "fee": "35.00",
+          "capacity": 500
+        }
+      ],
+      "private": {
+        "max_discount_percent": "18",
+        "min_margin_percent": "10",
+        "delivery_cost": "20"
+      },
+      "products": [
+        {
+          "id": "overstock-stud",
+          "name": "Structural framing timber",
+          "requirement_id": "stud",
+          "specifications": {
+            "section_mm": "38 × 89",
+            "length_mm": 2440,
+            "grade": "C24"
+          },
+          "unit": "each",
+          "pack_size": 1,
+          "stock": 240,
+          "list_price": "5.70",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "3.53"
+          }
+        },
+        {
+          "id": "overstock-sheathing",
+          "name": "Structural sheathing",
+          "requirement_id": "sheathing",
+          "specifications": {
+            "material": "OSB",
+            "thickness_mm": 11
+          },
+          "unit": "sheet",
+          "pack_size": 1,
+          "stock": 80,
+          "list_price": "20.90",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "12.96"
+          }
+        },
+        {
+          "id": "overstock-drywall",
+          "name": "Interior wall board",
+          "requirement_id": "drywall",
+          "specifications": {
+            "thickness_mm": 12.5,
+            "dimensions_mm": "1200 × 2400"
+          },
+          "unit": "sheet",
+          "pack_size": 1,
+          "stock": 120,
+          "list_price": "14.25",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "8.83"
+          }
+        },
+        {
+          "id": "overstock-screws",
+          "name": "Exterior fasteners",
+          "requirement_id": "screws",
+          "specifications": {
+            "length_mm": 50,
+            "finish": "galvanized",
+            "count_per_box": 100
+          },
+          "unit": "box",
+          "pack_size": 1,
+          "stock": 32,
+          "list_price": "11.40",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "7.07"
+          }
+        }
+      ],
+      "discounts": [
+        {
+          "code": "clearance-pair",
+          "description": "8% off merchandise when sheathing and drywall are ordered together (at least 10 selling units total).",
+          "required_products": [
+            "overstock-sheathing",
+            "overstock-drywall"
+          ],
+          "min_units": 10,
+          "percent": "8"
+        }
+      ]
+    },
+    {
+      "id": "local",
+      "name": "Neighborhood Delivery Supply",
+      "channel": "agent-to-agent",
+      "description": "Fast delivery and lower-cost shared delivery slots.",
+      "objective": "Prefer flexible delivery windows and consolidated orders.",
+      "slots": [
+        {
+          "id": "express",
+          "label": "Next-day dedicated delivery",
+          "days": 1,
+          "fee": "75.00",
+          "capacity": 250
+        },
+        {
+          "id": "shared",
+          "label": "Shared local route",
+          "days": 3,
+          "fee": "20.00",
+          "capacity": 500
+        }
+      ],
+      "private": {
+        "max_discount_percent": "8",
+        "min_margin_percent": "10",
+        "delivery_cost": "15"
+      },
+      "products": [
+        {
+          "id": "local-stud",
+          "name": "Structural framing timber",
+          "requirement_id": "stud",
+          "specifications": {
+            "section_mm": "38 × 89",
+            "length_mm": 2440,
+            "grade": "C24"
+          },
+          "unit": "each",
+          "pack_size": 1,
+          "stock": 240,
+          "list_price": "6.36",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "3.94"
+          }
+        },
+        {
+          "id": "local-insulation",
+          "name": "Wall insulation",
+          "requirement_id": "insulation",
+          "specifications": {
+            "material": "mineral wool",
+            "thermal_rating": "R13"
+          },
+          "unit": "pack",
+          "pack_size": 1,
+          "stock": 40,
+          "list_price": "37.10",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "23.00"
+          }
+        },
+        {
+          "id": "local-screws",
+          "name": "Exterior fasteners",
+          "requirement_id": "screws",
+          "specifications": {
+            "length_mm": 50,
+            "finish": "galvanized",
+            "count_per_box": 100
+          },
+          "unit": "box",
+          "pack_size": 1,
+          "stock": 32,
+          "list_price": "12.72",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [
+            "local-stainless-screws"
+          ],
+          "private": {
+            "unit_cost": "7.89"
+          }
+        },
+        {
+          "id": "local-membrane",
+          "name": "Breather membrane",
+          "requirement_id": "membrane",
+          "specifications": {
+            "coverage_m2": 100,
+            "type": "breathable"
+          },
+          "unit": "roll",
+          "pack_size": 1,
+          "stock": 8,
+          "list_price": "84.80",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "52.58"
+          }
+        },
+        {
+          "id": "local-concrete",
+          "name": "Concrete mix",
+          "requirement_id": "concrete",
+          "specifications": {
+            "mass_kg": 25
+          },
+          "unit": "bag",
+          "pack_size": 1,
+          "stock": 120,
+          "list_price": "8.48",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "5.26"
+          }
+        },
+        {
+          "id": "local-underlay",
+          "name": "Roof underlayment",
+          "requirement_id": "underlay",
+          "specifications": {
+            "coverage_m2": 20
+          },
+          "unit": "roll",
+          "pack_size": 1,
+          "stock": 12,
+          "list_price": "58.30",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "36.15"
+          }
+        },
+        {
+          "id": "local-stainless-screws",
+          "name": "Stainless exterior fasteners",
+          "requirement_id": "screws",
+          "specifications": {
+            "length_mm": 50,
+            "finish": "stainless",
+            "count_per_box": 100
+          },
+          "unit": "box",
+          "pack_size": 1,
+          "stock": 40,
+          "list_price": "15.00",
+          "minimum_quantity": 1,
+          "substitution_for": "screws",
+          "alternatives": [
+            "local-screws"
+          ],
+          "private": {
+            "unit_cost": "9.00"
+          }
+        }
+      ],
+      "discounts": [
+        {
+          "code": "route-share",
+          "description": "3% off merchandise for at least 10 selling units on the shared local route.",
+          "required_products": [],
+          "min_units": 10,
+          "delivery_slot": "shared",
+          "percent": "3"
+        }
+      ]
+    },
+    {
+      "id": "trader",
+      "name": "Forward Materials Desk",
+      "channel": "agent-to-agent",
+      "description": "Research-informed quotes for later delivery. No trading execution.",
+      "objective": "Explore later delivery when sourced market information makes it useful; report uncertainty.",
+      "slots": [
+        {
+          "id": "forward",
+          "label": "Future delivery",
+          "days": 14,
+          "fee": "40.00",
+          "capacity": 500
+        }
+      ],
+      "private": {
+        "max_discount_percent": "10",
+        "min_margin_percent": "10",
+        "delivery_cost": "20"
+      },
+      "products": [
+        {
+          "id": "trader-stud",
+          "name": "Structural framing timber",
+          "requirement_id": "stud",
+          "specifications": {
+            "section_mm": "38 × 89",
+            "length_mm": 2440,
+            "grade": "C24"
+          },
+          "unit": "each",
+          "pack_size": 1,
+          "stock": 240,
+          "list_price": "6.00",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "3.72"
+          }
+        },
+        {
+          "id": "trader-sheathing",
+          "name": "Structural sheathing",
+          "requirement_id": "sheathing",
+          "specifications": {
+            "material": "OSB",
+            "thickness_mm": 11
+          },
+          "unit": "sheet",
+          "pack_size": 1,
+          "stock": 80,
+          "list_price": "22.00",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "13.64"
+          }
+        },
+        {
+          "id": "trader-concrete",
+          "name": "Concrete mix",
+          "requirement_id": "concrete",
+          "specifications": {
+            "mass_kg": 25
+          },
+          "unit": "bag",
+          "pack_size": 1,
+          "stock": 120,
+          "list_price": "8.00",
+          "minimum_quantity": 1,
+          "substitution_for": null,
+          "alternatives": [],
+          "private": {
+            "unit_cost": "4.96"
+          }
+        }
+      ],
+      "discounts": []
+    }
+  ]
+}
