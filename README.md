@@ -6,9 +6,10 @@ A general contractor gives Takeoff a procurement task. It finds suitable product
 gathers offers, negotiates within a bounded scenario, asks about consequential
 tradeoffs, and returns a recommendation the contractor can inspect.
 
-This is our September 12, 2026 hackathon project. The repository contains the shared
-plan and the isolated Hermes buyer runtime with a working Ambiguous chat connection.
-The complete procurement journey is being built through the GitHub issues.
+This is our September 12, 2026 hackathon project. The repository contains the
+isolated Hermes buyer runtime with working Ambiguous chat, plus a resettable
+supplier market with a website and Ambiguous communication adapters. The complete
+procurement journey is being integrated through the GitHub issues.
 
 ## Start here
 
@@ -147,3 +148,11 @@ Use `createDemoProcurement()` before a decision to render the required contracto
 question. Pass `accept-five-day` or `require-three-day` after the answer; the selected
 supplier changes based on that answer. The fixture intentionally excludes buyer and
 supplier private commercial state, and must remain visibly labelled as simulated.
+
+
+## Supplier setup
+
+See the [supplier setup and buyer handoff](docs/suppliers/README.md) for installation,
+Codex account authentication, run commands, and channel examples. Keep supplier
+credentials and private run data in ignored `.local/suppliers/` state on the
+supplier computer. The cross-computer buyer connection remains to be verified.
