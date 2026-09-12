@@ -1,0 +1,23 @@
+# Copied once to .local/hermes/config.yaml by scripts/hermes init.
+model:
+  provider: takeoff-openai
+  default: gpt-5.6-sol
+providers:
+  takeoff-openai:
+    base_url: https://api.openai.com/v1
+    api_mode: codex_responses
+    key_env: OPENAI_API_KEY
+    # Pin Priority on the wire, including Hermes -z (which omits agent.service_tier).
+    extra_body:
+      service_tier: priority
+terminal:
+  backend: local
+  cwd: /opt/data/workspace
+  home_mode: profile
+  timeout: 120
+agent:
+  max_turns: 30
+  reasoning_effort: high
+  service_tier: fast
+platform_toolsets:
+  cli: [terminal, file, web, skills, todo, memory]

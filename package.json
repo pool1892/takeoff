@@ -1,0 +1,8 @@
+{
+  "name": "takeoff-demo-state",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
