@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import re
 import signal
+import threading
 import sqlite3
 import subprocess
 import sys
@@ -110,7 +111,7 @@ def run_hermes(message, history, directory):
                 'content': m.get('content', '')[:12000]} for m in history[-16:]]
     prompt = (
         load_personality() + '\n\nDM transport instructions:\n'
-        'This is a direct message from Christoph, the contractor. '
+        'This is a direct message from the contractor, who uses Bill for this project. '
         'Keep credentials and internal '
         'logs private. You run inside an isolated container; do not attempt host access. '
         'The transport will publish your final answer to the same DM: do not send or edit '
@@ -259,6 +260,48 @@ class Bridge:
                 self.handle(channel_id, message, history[:index])
 
 
+def poll_services(bridge, procurement, interval=5, once=False, stop=None):
+    """One DM consumer and one serial task worker share the listener lifetime."""
+    stop = stop or threading.Event()
+    if once:
+        try:
+            bridge.poll()
+            procurement.poll()
+        except BridgeError as error:
+            print(str(error), file=sys.stderr, flush=True)
+            return 1
+        return 0
+    failures = []
+    def task_worker():
+        try:
+            while not stop.is_set():
+                try:
+                    procurement.poll()
+                except BridgeError as error:
+                    print(str(error), file=sys.stderr, flush=True)
+                stop.wait(max(2, interval))
+        except Exception as error:
+            failures.append(error)
+            stop.set()
+    worker = threading.Thread(target=task_worker, name='takeoff-procurement', daemon=True)
+    worker.start()
+    try:
+        while not stop.is_set():
+            try:
+                bridge.poll()
+            except BridgeError as error:
+                print(str(error), file=sys.stderr, flush=True)
+            stop.wait(max(2, interval))
+    finally:
+        stop.set()
+        # Let the bounded in-flight task finish its durable writes before releasing
+        # the singleton listener lock. Never start another procurement poll here.
+        worker.join()
+    if failures:
+        raise failures[0]
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--once', action='store_true', help='Process one poll and exit')
@@ -285,19 +328,16 @@ def main():
             raise BridgeError('Credential does not match configured Takeoff agent')
         bridge = Bridge(api, args.state_dir / 'state.json', user_id)
         from procurement import Procurement
-        procurement = Procurement(api, user_id)
+        procurement = Procurement(API(), user_id)
         print('Takeoff Hermes DM bridge ready', flush=True)
-        while True:
-            try:
-                bridge.poll()
-                procurement.poll()
-            except BridgeError as error:
-                print(str(error), file=sys.stderr, flush=True)
-                if args.once:
-                    return 1
-            if args.once:
-                return 0
-            time.sleep(max(2, args.interval))
+        stop = threading.Event()
+        previous_handlers = {sig: signal.signal(sig, lambda *_: stop.set())
+                             for sig in (signal.SIGINT, signal.SIGTERM)}
+        try:
+            return poll_services(bridge, procurement, args.interval, args.once, stop)
+        finally:
+            for sig, handler in previous_handlers.items():
+                signal.signal(sig, handler)
 
 
 if __name__ == '__main__':

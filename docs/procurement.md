@@ -45,6 +45,14 @@ verified contractor or Chip. The Chip-created case supports authorized integrati
 tests; task authorship must be represented accurately. No task is admitted while
 configuration is disabled or required references are missing.
 
+**Make integration tasks visible to the contractor.** Ambiguous tasks without a
+`project_id` are private to their creator and assignee. A task created by Chip and
+assigned to Chip must belong to a project the contractor can access. Create a
+private project, add the contractor through `POST /api/projects/{id}/members`, and
+set the task's `project_id`. Add the contractor to `subscriber_ids` for updates.
+Verify project membership and task assignment after writing; a successful task
+API response under Chip's identity does not verify contractor visibility.
+
 Bind **one fresh remote supplier run to one actual task**. A different task cannot
 reuse an existing local binding to that supplier run. Obtain a reset/new run from
 the supplier owner for another attempt, retain the previous evidence, and configure
@@ -62,8 +70,12 @@ scripts/hermes bridge-start
 scripts/hermes bridge-status
 ```
 
-The same bridge polls contractor DMs and procurement tasks. One bounded task turn
-runs per poll; it is not a separate host daemon. After a successful turn, the
+The same bridge polls contractor DMs and procurement tasks. A single procurement
+worker thread runs bounded task turns while the main thread continues polling DMs,
+so an active procurement turn does not prevent direct replies. Each thread has its
+own API client; the existing listener lock still permits only one listener process.
+Shutdown stops new polls and lets an in-flight task finish its durable writes.
+There is no separate host daemon. After a successful turn, the
 listener records the native Hermes session ID. New contractor comments and
 correlated supplier replies resume that task's session with `--resume`, together
 with its persisted procurement snapshot. Hermes should send a grouped inquiry,

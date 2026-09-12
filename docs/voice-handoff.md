@@ -37,19 +37,33 @@ main can read results. Supplier coding coordination is with
 `tapan-agent@agentmail.to`; main currently handles that mailbox conversation to
 avoid conflicting instructions. All coordination emails are user-authorized.
 
-## Status (September 12, ~16:20 Pacific)
+## Status (September 12, following the 2:46 pm Pacific call)
 
 Christoph chose GPT-Live (`gpt-live-1`, full duplex) for the buyer's voice and a
 live human teammate playing the seller for the demo. Implementation and interface:
 [`integrations/voice/README.md`](../integrations/voice/README.md). Delegated
-decisions run on `gpt-5.6-luna` at `reasoning.effort=max`; speech stays on
+decisions run on `gpt-5.6-luna` at `reasoning.effort=xhigh` (the Live API rejects
+`max`); speech stays on
 `gpt-live-1`. Launch: `scripts/hermes voice-web --request /opt/data/voice/human-request.json`
 (main's launcher publishes `127.0.0.1:3000`; the seller reaches it over an SSH
 local forward from the Mac and opens the printed `/s/<token>/` page).
 
-Verified: a real `gpt-live-1` session starts from inside the isolated container
-through the egress proxy with the Responses-delegation config; helper arithmetic,
-authorization checks, and quote mapping pass local checks; the seller page serves.
-Not yet verified: a complete WebRTC conversation with a human, the in-container
-audio mock smoke, and any live call to the supplier computer (it has no speech
-key yet). Nothing here is a live milestone until those runs exist as evidence.
+Verified (evidence under `/opt/data/voice/calls/`, i.e. `.local/hermes/voice/calls/`):
+
+- `c0b4bad0fe49` — **live human call** from the hackathon Mac to the buyer agent
+  in the isolated container (session `live_u7_ENPqYgriGjqchDSmqEbW8`, 67 s,
+  2026-09-12 21:46:46Z). Full-duplex conversation with interruptions; both
+  transcripts recorded by the buyer sideband. Status `unconfirmed`: the seller
+  quoted no prices, so no `record_quote`/`confirm_readback` fired and there is no
+  confirmed quote. Connection milestone only, not a completed quote.
+- `a7d59524ec0f` — headless SDP → session → sideband → close handshake through
+  the published port (`live_usage {"seconds": 15}`).
+- `f047de3b8d62` — in-container mock smoke of the AI-supplier bridge with real
+  audio both ways (scripted mock supplier, labeled mock); buyer spoke and heard
+  the readback; confirmation was blocked because STT rendered the total in words —
+  fixed by spoken-number normalization in `call.py` (not re-run; no further paid
+  mocks unless a new bug appears).
+
+Not verified: a human call that reaches a confirmed quote, and any live call to
+the supplier computer (it has no speech key yet). The Live delegation rejects
+`reasoning.effort=max` (HTTP 400); `xhigh` is the working cap.

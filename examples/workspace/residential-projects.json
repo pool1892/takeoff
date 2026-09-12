@@ -1,0 +1,45 @@
+{
+  "id": "residential-workspace-2026-09-12",
+  "as_of": "2026-09-12",
+  "provenance": "Authored background scenario; statuses are not measured live construction or procurement outcomes.",
+  "contractor_alias": "Bill",
+  "main_project_name": "Bill's house build",
+  "projects": [
+    {
+      "key": "sunset-kitchen",
+      "name": "Sunset kitchen remodel",
+      "description": "Occupied-home kitchen remodel: protect the family's access, coordinate rough-in inspections, and lock cabinet details before fabrication.",
+      "color": "#D97706",
+      "tasks": [
+        {"key": "site-protection", "title": "Set up dust barriers and temporary kitchen access", "description": "Protect the hallway and living room, isolate the demolition area, and mark a clear route to the refrigerator and sink. Review the daily cleanup plan with the homeowner.", "status": "done", "priority": "high", "start_date": "2026-09-08", "due_date": "2026-09-10", "owner": "contractor"},
+        {"key": "rough-in", "title": "Coordinate electrical and plumbing rough-in inspection", "description": "Confirm the electrician and plumber will be ready for the same inspection window. Check island outlet locations and the dishwasher drain route against the revised kitchen plan before closing walls.", "status": "in_progress", "priority": "high", "start_date": "2026-09-11", "due_date": "2026-09-15", "owner": "contractor"},
+        {"key": "cabinet-layout", "title": "Review cabinet shop drawings with the homeowner", "description": "Resolve filler widths, refrigerator clearance, and the pull-out trash cabinet. Capture the homeowner's choices before releasing the drawings to the cabinet shop.", "status": "todo", "priority": "medium", "start_date": "2026-09-14", "due_date": "2026-09-16", "owner": "contractor"},
+        {"key": "counter-template", "title": "Schedule countertop templating after base cabinets", "description": "Hold a templating window for the week after cabinet installation. Verify the sink model and faucet hole count are available for the fabricator before confirming the visit.", "status": "todo", "priority": "low", "start_date": "2026-09-21", "due_date": "2026-09-23", "owner": "unassigned"}
+      ]
+    },
+    {
+      "key": "bernal-adu",
+      "name": "Bernal Heights backyard ADU",
+      "description": "Detached backyard ADU with a narrow access path. Coordinate utility routes, inspection readiness, and neighborhood delivery access around the foundation work.",
+      "color": "#2563EB",
+      "tasks": [
+        {"key": "access-walk", "title": "Document site access and neighbor protection plan", "description": "Walk the side-yard route, note gate clearance, and identify where temporary fence panels and ground protection will go. Keep emergency and homeowner access open throughout the work.", "status": "done", "priority": "medium", "start_date": "2026-09-08", "due_date": "2026-09-09", "owner": "contractor"},
+        {"key": "utility-route", "title": "Confirm utility trench route before excavation", "description": "Reconcile the plumber's sewer route with the electrical conduit path and the approved site plan. Record any conflicts for the designer before the excavation crew mobilizes.", "status": "in_progress", "priority": "high", "start_date": "2026-09-10", "due_date": "2026-09-14", "owner": "contractor"},
+        {"key": "foundation-inspection", "title": "Prepare the footing inspection checklist", "description": "Collect the current structural sheets, confirm the inspection request window, and list required checks for dimensions, reinforcing placement, and hold-down locations. The inspector's sign-off remains a separate field record.", "status": "todo", "priority": "high", "start_date": "2026-09-14", "due_date": "2026-09-16", "owner": "contractor"},
+        {"key": "delivery-access", "title": "Plan concrete truck access and resident notice", "description": "Discuss truck staging and pump access with the concrete crew. Draft a short resident notice with the proposed date and contact number once the inspection and pour schedule are confirmed.", "status": "todo", "priority": "medium", "start_date": "2026-09-15", "due_date": "2026-09-17", "owner": "unassigned"}
+      ]
+    },
+    {
+      "key": "richmond-bath",
+      "name": "Richmond primary bath renovation",
+      "description": "Primary bathroom renovation moving from selections into waterproofing and tile preparation. Keep inspection records, finish decisions, and homeowner access coordinated.",
+      "color": "#0F766E",
+      "tasks": [
+        {"key": "layout-review", "title": "Record shower layout and niche dimensions", "description": "Review the shower bench, niche placement, and door swing with the homeowner. Put the agreed layout on the current drawing set so the tile and glass teams work from the same dimensions.", "status": "done", "priority": "medium", "start_date": "2026-09-09", "due_date": "2026-09-11", "owner": "contractor"},
+        {"key": "waterproofing", "title": "Coordinate shower waterproofing and flood-test window", "description": "Confirm the installer's documented system and curing requirements, then arrange the required inspection window. Keep the shower area protected and do not schedule tile work until the required checks are complete.", "status": "in_progress", "priority": "high", "start_date": "2026-09-11", "due_date": "2026-09-16", "owner": "contractor"},
+        {"key": "tile-layout", "title": "Review tile layout and grout sample board", "description": "Prepare a dry layout showing cuts at the niche and shower curb. Ask the homeowner to choose the grout color from the sample board before setting the visible wall areas.", "status": "todo", "priority": "medium", "start_date": "2026-09-15", "due_date": "2026-09-17", "owner": "contractor"},
+        {"key": "glass-measure", "title": "Book shower glass measurement after tile completion", "description": "Confirm the glass contractor's lead time and hold a measurement visit after the curb and wall tile are finished. Verify hinge-side blocking information is available for the visit.", "status": "todo", "priority": "low", "start_date": "2026-09-22", "due_date": "2026-09-24", "owner": "unassigned"}
+      ]
+    }
+  ]
+}

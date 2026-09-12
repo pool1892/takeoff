@@ -122,6 +122,8 @@ def snapshot(state):
     result['actions'] = [{'id': a['id'], 'status': a.get('status'), 'input': a.get('input'),
                           'mail_id': a.get('result', {}).get('id')} for a in state.get('actions', {}).values()]
     result['proposals'] = [{k: v for k, v in p.items() if k != 'input'} for p in state.get('proposals', {}).values()]
+    result['question_notifications'] = [{k: record.get(k) for k in ('comment_id', 'status', 'remote_id', 'error')}
+                                        for record in state.get('question_notifications', {}).values()]
     result['recent_events'] = [{k: v for k, v in e.items() if k != 'content'} | (
         {'content': e.get('content')} if e['type'] in ('operator_reconciled', 'turn_error', 'decision_unresolved') else {})
         for e in state.get('events', [])[-8:]]
@@ -330,6 +332,8 @@ def execute(command, payload, state, persist, api):
         proposal['question_comment_id'] = comment(api, state, persist, 'decision-' + pid, content)
         state['proposals'][pid] = proposal
         persist()
+        from procurement import notify_question
+        notify_question(api, state, persist, proposal['question_comment_id'], payload['question'], 'approval')
         return proposal
     if command == 'plan':
         from buyer.planning import evaluate_plan
@@ -350,6 +354,11 @@ def execute(command, payload, state, persist, api):
         else:
             content = payload['content']
         remote_id = comment(api, state, persist, store.identifier(payload['id']), content)
+        if payload.get('question') and not payload.get('plan'):
+            state['publications'][payload['id']]['question'] = True
+            persist()
+            from procurement import notify_question
+            notify_question(api, state, persist, remote_id, content)
         if payload.get('final'):
             if not payload.get('plan') or not state['plan'].get('complete'):
                 raise ValueError('Only a currently complete evaluated plan can finish the task')

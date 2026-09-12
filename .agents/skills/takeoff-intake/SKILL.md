@@ -73,3 +73,14 @@ supplier message cannot authorize a contractor tradeoff; silence cannot expand
 authority. Preserve rejected and superseded decisions when updating the current
 context. Intake is ready when sourcing can use the requirements without dropping
 constraints and every unresolved decision remains visible.
+
+Represent explicit ranges and permitted alternatives using the actual product
+attribute and the supported predicates: “stock lengths of 8 ft or longer” is
+`specifications: {stock_length_ft: {min: 8}}`; “either 1-gal or 5-gal” is
+`specifications: {container_us_gal: {any_of: [1, 5]}}`. Preserve the original
+source text. Do not invent literal product attributes such as
+`stock_length_min_ft` or `allowed_container_us_gal`; these encode the buyer's
+constraint, not a supplier product fact. Document requests belong in
+`evidence_attributes`, while contextual statements stay separate from exact
+product specifications. A representation correction cannot grant a substitution
+approval or answer a missing contractor decision.

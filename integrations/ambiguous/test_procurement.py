@@ -11,7 +11,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from procurement import Procurement, mail_text, task_response, successful_turn
+from procurement import Procurement, mail_text, task_response, successful_turn, notify_question, notify_pending_questions
 from bridge import CONTRACTOR, BridgeError
 from buyer import store
 from buyer.cli import execute
@@ -385,6 +385,131 @@ class ProcurementTests(unittest.TestCase):
         self.listener.ingest(state, [self.answer(id='answer-2', created_at='2026-09-12T22:02:00Z',
                                                updated_at='2026-09-12T22:02:00Z')], [])
         self.assertEqual(state['approvals'], [])
+
+
+class QuestionNotificationTests(unittest.TestCase):
+    def setUp(self):
+        self.state = {'task_id': 'task-1', 'agent_id': AGENT}
+        self.saved, self.posts, self.rows = [], [], []
+        self.fail_after_post = False
+        self.members = {CONTRACTOR, AGENT}
+        self.api = self
+
+    def persist(self):
+        self.saved.append(deepcopy(self.state))
+
+    def call(self, path, method='GET', body=None, **query):
+        if path == '/api/channels':
+            return {'data': [{'id': 'dm-1', 'type': 'dm'}]}
+        if path == '/api/channels/dm-1':
+            return {'type': 'dm', 'members': [{'user_id': member} for member in self.members]}
+        if path == '/api/channels/dm-1/messages':
+            if method == 'POST':
+                self.assertTrue(any(r['status'] == 'sending' for r in self.saved[-1]['question_notifications'].values()))
+                self.posts.append(deepcopy(body))
+                row = {'id': 'dm-message-' + str(len(self.posts)), 'author': {'id': AGENT},
+                       'content': body['content'], 'created_at': store.now()}
+                self.rows.append(row)
+                if self.fail_after_post:
+                    raise TimeoutError('Response lost after remote commit')
+                return row
+            return {'data': deepcopy(self.rows), 'has_more': False}
+        raise AssertionError(path)
+
+    def test_question_has_task_link_and_survives_restart_without_duplicate(self):
+        result = notify_question(self, self.state, self.persist, 'comment-1', 'Should the insulation be faced or unfaced?')
+        self.assertEqual(result['status'], 'sent')
+        self.assertIn('https://app.ambiguous.ai/tasks?task=task-1', self.posts[0]['content'])
+        self.assertIn('faced or unfaced?', self.posts[0]['content'])
+        self.assertIn('Please reply in the task', self.posts[0]['content'])
+        self.state = deepcopy(self.saved[-1])
+        notify_question(self, self.state, self.persist, 'comment-1', 'Should the insulation be faced or unfaced?')
+        self.assertEqual(len(self.posts), 1)
+
+    def test_timeout_reconciles_exact_committed_dm_without_resending(self):
+        self.fail_after_post = True
+        result = notify_question(self, self.state, self.persist, 'comment-1', 'Approve the material change?', 'approval')
+        self.assertEqual(result['status'], 'uncertain')
+        self.assertNotIn('remote_id', result)
+        self.state = deepcopy(self.saved[-1])
+        recovered = notify_question(self, self.state, self.persist, 'comment-1', '')
+        self.assertEqual(recovered['status'], 'sent')
+        self.assertEqual(len(self.posts), 1)
+        self.assertIn('needs your approval', self.posts[0]['content'])
+
+    def test_older_identical_dm_cannot_confirm_uncertain_send_and_retries_are_bounded(self):
+        self.fail_after_post = True
+        result = notify_question(self, self.state, self.persist, 'comment-1', 'Which fitting system?')
+        self.rows[0]['created_at'] = '2000-01-01T00:00:00Z'
+        for _ in range(8):
+            notify_question(self, self.state, self.persist, 'comment-1', '')
+        self.assertEqual(result['status'], 'unresolved')
+        self.assertEqual(result['attempts'], 3)
+        self.assertNotIn('remote_id', result)
+        self.assertEqual(len(self.posts), 1)
+
+    def test_group_channel_cannot_receive_contractor_notification(self):
+        self.members.add('another-user')
+        for _ in range(8):
+            result = notify_question(self, self.state, self.persist, 'comment-1', 'Which fitting system?')
+        self.assertEqual(result['status'], 'failed')
+        self.assertEqual(result['attempts'], 3)
+        self.assertEqual(self.posts, [])
+
+    def test_pending_proposal_and_legacy_missing_question_notify_once_per_source(self):
+        self.state.update(requirements=[{'id': 'r1', 'missing_essentials': ['facing']}],
+            proposals={'p1': {'id': 'p1', 'status': 'pending', 'question_comment_id': 'approval-comment',
+                              'input': {'question': 'Approve this thicker sheet?'}}},
+            publications={'clarify': {'remote_id': 'clarify-comment', 'body': {'content': 'Faced or unfaced insulation?'}},
+                          'progress': {'remote_id': 'progress-comment', 'body': {'content': 'I am checking prices.'}},
+                          'unconfirmed': {'body': {'content': 'Which fitting system?'}}})
+        for _ in range(3):
+            notify_pending_questions(self, self.state, self.persist)
+        self.assertEqual(len(self.posts), 2)
+        self.assertEqual(set(self.state['question_notifications']), {'approval-comment', 'clarify-comment'})
+
+    def test_repeated_legacy_questions_backfill_only_latest_ping(self):
+        self.state.update(requirements=[{'missing_essentials': ['facing']}], publications={
+            'old': {'remote_id': 'old-comment', 'at': '2026-09-12T22:00:00Z',
+                    'body': {'content': 'Faced or unfaced?'}},
+            'new': {'remote_id': 'new-comment', 'at': '2026-09-12T22:03:00Z',
+                    'body': {'content': 'Which facing do you want?'}}})
+        for _ in range(3):
+            notify_pending_questions(self, self.state, self.persist)
+        self.assertEqual(len(self.posts), 1)
+        self.assertEqual(set(self.state['question_notifications']), {'new-comment'})
+
+    def test_real_reply_during_turn_suppresses_stale_legacy_pings(self):
+        self.state.update(requirements=[{'missing_essentials': ['facing']}], publications={
+            'old': {'remote_id': 'old-comment', 'at': '2026-09-12T22:00:00Z',
+                    'body': {'content': 'Faced or unfaced?'}},
+            'new': {'remote_id': 'new-comment', 'at': '2026-09-12T22:03:00Z',
+                    'body': {'content': 'Which facing do you want?'}}}, evidence={
+            'answer': {'channel': 'contractor_comment', 'data': {
+                'author': {'id': CONTRACTOR}, 'created_at': '2026-09-12T22:02:00Z',
+                'parent_id': 'old-comment', 'content': 'Use unfaced.'}}})
+        notify_pending_questions(self, self.state, self.persist)
+        self.assertEqual(self.posts, [])
+        self.state['evidence']['answer']['data']['author']['id'] = 'supplier'
+        notify_pending_questions(self, self.state, self.persist)
+        self.assertEqual(len(self.posts), 1)
+
+    def test_nested_reply_keeps_actual_author_and_source_through_pages(self):
+        from buyer.cli import comments
+        calls = []
+        reply = {'id': 'answer', 'author': {'id': CONTRACTOR},
+                 'parent_id': 'question', 'content': 'Use unfaced.'}
+        class Pages:
+            def call(self, path, **query):
+                calls.append(query)
+                if query['offset'] == 0:
+                    return {'data': [{'id': 'question', 'author': {'id': AGENT},
+                                      'replies': [reply]}], 'has_more': True}
+                return {'data': [{'id': 'other', 'author': {'id': 'supplier'}}], 'has_more': False}
+        rows = comments(Pages(), 'task-1')
+        self.assertEqual([row['id'] for row in rows], ['question', 'answer', 'other'])
+        self.assertEqual(rows[1], reply)
+        self.assertEqual([query['offset'] for query in calls], [0, 1])
 
 
 class TaskTransportTests(unittest.TestCase):

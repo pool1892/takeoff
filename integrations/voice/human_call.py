@@ -314,7 +314,17 @@ class Server:
             response = client.post(SESSIONS_URL, headers={'Authorization': f"Bearer {self.env.get('OPENAI_API_KEY', '')}"},
                                    json={'session': self.session_config(request), 'transport': {'type': 'webrtc', 'sdp': sdp}})
         if response.status_code >= 400:
-            raise CallError(f'Live session creation failed: HTTP {response.status_code}')
+            # Never trust the provider not to echo request headers: redact the key before any output.
+            try:
+                detail = (response.json().get('error') or {}).get('message', '')[:200]
+            except ValueError:
+                detail = ''
+            key = self.env.get('OPENAI_API_KEY', '')
+            if key:
+                detail = detail.replace(key, '[redacted]')
+            detail = re.sub(r'sk-[A-Za-z0-9_-]{8,}', '[redacted]', detail)
+            sys.stderr.write(f'live session creation failed: HTTP {response.status_code} {detail}\n')
+            raise CallError(f'Live session creation failed: HTTP {response.status_code} {detail}'.strip())
         body = response.json()
         session_id = body.get('id') or (body.get('session') or {}).get('id')
         answer = body.get('sdp') or (body.get('transport') or {}).get('sdp')
@@ -357,8 +367,12 @@ def make_handler(server):
         def do_POST(self):
             if not self.authorized() or not self.path.endswith('/api/session'):
                 return self.reply(404, {'error': 'not found'})
+            # CSRF guard for the key-holding endpoint (the URL token is the auth). Accept the page's own
+            # origin even when a TCP relay or SSH forward rewrites Host: same host, or a loopback origin.
             origin, host = self.headers.get('Origin', ''), self.headers.get('Host', '')
-            if not origin or origin.split('://', 1)[-1] != host:
+            origin_host = origin.split('://', 1)[-1] if origin else ''
+            if not origin_host or not (origin_host == host or origin_host.split(':')[0] in ('localhost', '127.0.0.1')
+                                       or origin_host.endswith('.ts.net')):
                 return self.reply(403, {'error': 'unexpected request origin'})
             length = int(self.headers.get('Content-Length', '0'))
             if not 0 < length <= 65536:

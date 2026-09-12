@@ -227,6 +227,16 @@ def assess_candidate(requirement, product, approvals=None, selected_products=Non
         missing.append("product.source")
     missing.extend(f"requirement.{key}" for key in requirement.get("missing_essentials", []))
     facts = product.get("specifications") or {}
+    evidence_attributes = requirement.get("evidence_attributes", [])
+    if not isinstance(evidence_attributes, list):
+        missing.append("requirement.evidence_attributes (expected attribute names)")
+    else:
+        for attribute in evidence_attributes:
+            if not isinstance(attribute, str) or not attribute.strip():
+                missing.append("requirement.evidence_attributes (invalid attribute name)")
+            elif not facts.get(attribute) or (isinstance(facts[attribute], str)
+                                               and not facts[attribute].strip()):
+                missing.append(f"product.specifications.{attribute}")
     for clarification in product.get("unresolved_clarifications") or []:
         if clarification.get("required_before_recommendation") is not True:
             continue

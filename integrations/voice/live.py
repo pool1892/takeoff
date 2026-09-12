@@ -39,8 +39,11 @@ RATE = 24000
 CHUNK_MS = 100
 CHUNK_BYTES = RATE * 2 * CHUNK_MS // 1000
 SILENCE = b'\0' * CHUNK_BYTES
-GAP_SECONDS = 1.3          # quiet output this long ends a buyer utterance
+GAP_SECONDS = 1.3          # this much silence after speech ends a buyer utterance
 TURN_CAP_SECONDS = 28.0    # supplier accepts at most 30 s per turn
+SPEECH_PEAK = 600          # int16 amplitude above which an output chunk counts as speech
+PRE_ROLL_BYTES = RATE * 2 // 2   # keep 0.5 s before detected speech
+TAIL_BYTES = int(RATE * 2 * 0.4)  # keep 0.4 s after the last speech
 RESERVE_SECONDS = 30       # below this, no new questions: confirm or end
 FORCE_END_SECONDS = 10
 
@@ -148,7 +151,9 @@ class Bridge:
         self.out_pcm = bytearray()
         self.out_text = []
         self.in_text = []
-        self.last_out = None
+        self.speech_start = None   # byte offset in out_pcm where speech began
+        self.speech_end = None     # byte offset just after the last speech chunk
+        self.last_speech = None
         self.inbound = asyncio.Queue()
         self.supplier_events = asyncio.Queue()
         self.send_lock = asyncio.Lock()
@@ -248,8 +253,20 @@ class Bridge:
                 self.result['live_session_id'] = (event.get('session') or {}).get('id')
                 self.live_started.set()
             elif kind == 'session.output_audio.delta':
-                self.out_pcm += base64.b64decode(event['delta'])
-                self.last_out = time.monotonic()
+                # GPT-Live streams output continuously, silence included: gate turns on actual speech.
+                chunk = base64.b64decode(event['delta'])
+                samples = array.array('h')
+                samples.frombytes(chunk[:len(chunk) - len(chunk) % 2])
+                if samples and max(abs(s) for s in samples) > SPEECH_PEAK:
+                    if self.speech_start is None:
+                        self.speech_start = max(0, len(self.out_pcm) - PRE_ROLL_BYTES)
+                    self.out_pcm += chunk
+                    self.speech_end = len(self.out_pcm)
+                    self.last_speech = time.monotonic()
+                else:
+                    self.out_pcm += chunk
+                    if self.speech_start is None and len(self.out_pcm) > 2 * PRE_ROLL_BYTES:
+                        del self.out_pcm[:-PRE_ROLL_BYTES]
             elif kind == 'session.output_transcript.delta':
                 self.out_text.append(event.get('delta', ''))
                 self.last_out = time.monotonic()
@@ -335,18 +352,20 @@ class Bridge:
             await self.supplier_events.put({'type': '_closed', 'reason': 'closed'})
 
     def utterance_ready(self):
-        if not self.out_pcm or self.last_out is None or not self.inbound.empty():
+        if self.speech_start is None or not self.inbound.empty():
             return False
-        seconds = len(self.out_pcm) / (RATE * 2)
-        return time.monotonic() - self.last_out >= GAP_SECONDS or seconds >= TURN_CAP_SECONDS
+        seconds = (self.speech_end - self.speech_start) / (RATE * 2)
+        return time.monotonic() - self.last_speech >= GAP_SECONDS or seconds >= TURN_CAP_SECONDS
 
     async def send_turn(self):
         turn = self.exchanges + 1
-        pcm = bytes(self.out_pcm)
+        cap = int(TURN_CAP_SECONDS * RATE * 2)
+        end = min(len(self.out_pcm), self.speech_end + TAIL_BYTES)
+        pcm = bytes(self.out_pcm[self.speech_start:end])
         text = ''.join(self.out_text).strip()
         self.out_pcm.clear()
         self.out_text.clear()
-        cap = int(TURN_CAP_SECONDS * RATE * 2)
+        self.speech_start = self.speech_end = self.last_speech = None
         truncated = len(pcm) > cap
         pcm = pcm[:cap]
         audio = wav_from_pcm16(pcm)
@@ -423,6 +442,8 @@ class Bridge:
 
     async def conversation(self):
         await self.instruct('Begin the call now: greet the supplier, say you are Takeoff calling for a contractor, state the material request in one short breath, then stop and listen.', 'greeting')
+        await self.live_send({'type': 'session.commentary.append', 'event_id': 'begin', 'delegation_id': None,
+                              'content': 'Begin the conversation now, following the instructions provided.'})
         while not self.done.is_set():
             if self.utterance_ready():
                 await self.send_turn()

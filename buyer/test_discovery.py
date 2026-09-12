@@ -115,6 +115,65 @@ class DiscoveryTests(unittest.TestCase):
             self.assertIsNone(result['selling_quantity'])
 
 
+class EvidencePresenceTests(unittest.TestCase):
+    def setUp(self):
+        self.requirement = {
+            'id': 'house-12', 'revision': 2, 'quantity': 12, 'unit': 'sheet',
+            'source_text': '12 sheets half-inch cement backer board, 3x5, sold for interior wall tile backing.',
+            'specifications': {'material': 'cement backer board',
+                               'manufacturer_stated_use': 'interior wall tile backing'},
+            'evidence_attributes': ['use_evidence_ref'],
+        }
+        self.product = {
+            'id': 'backer', 'revision': 1, 'unit': 'sheet', 'pack_size': 1,
+            'minimum_quantity': 1, 'stock': 20, 'source': 'public-catalog',
+            'specifications': {**self.requirement['specifications'],
+                               'use_evidence_ref': 'fixture:cement-backer-data'},
+        }
+
+    def test_documented_reference_satisfies_presence_without_literal_value(self):
+        before = deepcopy(self.requirement)
+        result = assess_candidate(self.requirement, self.product)
+        self.assertEqual(result['status'], 'suitable')
+        self.assertEqual(result['mismatches'], [])
+        self.assertEqual(result['product']['specifications']['use_evidence_ref'],
+                         'fixture:cement-backer-data')
+        self.assertEqual(self.requirement, before)
+
+    def test_missing_or_empty_reference_blocks_without_substitution(self):
+        for value in (None, '', '  ', [], {}, False):
+            with self.subTest(value=value):
+                self.product['specifications']['use_evidence_ref'] = value
+                result = assess_candidate(self.requirement, self.product)
+                self.assertEqual(result['status'], 'needs_evidence')
+                self.assertIn('product.specifications.use_evidence_ref', result['missing_evidence'])
+                self.assertEqual(result['mismatches'], [])
+
+    def test_evidence_presence_does_not_waive_material_or_use(self):
+        for attribute, actual in (('material', 'gypsum board'),
+                                  ('manufacturer_stated_use', 'floor tile backing')):
+            with self.subTest(attribute=attribute):
+                product = deepcopy(self.product)
+                product['specifications'][attribute] = actual
+                result = assess_candidate(self.requirement, product)
+                self.assertEqual(result['status'], 'needs_approval')
+                self.assertEqual(result['mismatches'][0]['attribute'], attribute)
+        del self.product['specifications']['manufacturer_stated_use']
+        self.assertEqual(assess_candidate(self.requirement, self.product)['status'], 'needs_evidence')
+
+    def test_literal_specifications_are_never_silently_reinterpreted(self):
+        self.requirement['specifications']['use_evidence_ref'] = 'required from supplier product information'
+        result = assess_candidate(self.requirement, self.product)
+        self.assertEqual(result['status'], 'needs_approval')
+        self.assertEqual(result['mismatches'][0]['attribute'], 'use_evidence_ref')
+
+    def test_malformed_evidence_requirement_is_unresolved(self):
+        for attributes in ('use_evidence_ref', None, [''], [{}]):
+            with self.subTest(attributes=attributes):
+                self.requirement['evidence_attributes'] = attributes
+                self.assertEqual(assess_candidate(self.requirement, self.product)['status'], 'needs_evidence')
+
+
 class VariantAndCompatibilityTests(unittest.TestCase):
     def setUp(self):
         self.requirement = {'id': 'pipe', 'revision': 1, 'quantity': 200, 'unit': 'linear_ft',

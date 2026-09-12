@@ -60,6 +60,11 @@ task completion at 21:35 UTC. The buyer proposed USD 2,300 and the supplier matc
 it; no post-quote counteroffer occurred. A fresh 25-line run is now active with
 general, overstock, and local supplier workers. The full task → remote quote → contractor
 decision → recommendation path is still under verification.
-Full 25-line completion, live phone operation, human comparison, and recorded demo
+The contractor uses Bill as the project persona. Three additional residential
+projects with twelve tasks provide [authored workspace background](workspace-background.md);
+their statuses are presentation context, not measured work completed by Chip.
+A live human voice conversation is verified; it contained no price offer or
+confirmed quote. See the [voice evidence](voice-handoff.md).
+Full 25-line completion, a confirmed phone quote, human comparison, and recorded demo
 playback are separate milestones. See [the integration handoff](suppliers/integration.md)
 for the current endpoint and protocol.

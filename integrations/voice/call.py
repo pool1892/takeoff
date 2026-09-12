@@ -38,8 +38,8 @@ TURN_MAX_BYTES = 2_000_000
 SAY_MAX_CHARS = 700
 SPEAK_RESERVE_SECONDS = 35  # do not start a new spoken exchange with less time left
 DEFAULT_HOST = 'multiply-cameo-clash.ngrok-free.dev'
-DEFAULT_MODEL = 'gpt-5.6-luna'      # delegated decisions; Luna supports reasoning.effort up to "max"
-DEFAULT_REASONING = 'max'
+DEFAULT_MODEL = 'gpt-5.6-luna'      # delegated decisions
+DEFAULT_REASONING = 'xhigh'         # Live delegation accepts none…xhigh; "max" is rejected by /v1/live/sessions
 DEFAULT_HOME = '.local/voice'
 BUYER_VOICE = 'ash'
 OPENAI = 'https://api.openai.com/v1'
@@ -121,14 +121,63 @@ def quote_total(quote):
     return None
 
 
+_UNITS = {w: i for i, w in enumerate(['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
+                                      'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'])}
+_TENS = {'twenty': 20, 'thirty': 30, 'forty': 40, 'fifty': 50, 'sixty': 60, 'seventy': 70, 'eighty': 80, 'ninety': 90}
+_NUMBER_WORD = re.compile(r'\b((?:' + '|'.join(list(_UNITS) + list(_TENS) + ['hundred', 'thousand', 'and']) + r')(?:[\s-]+(?:'
+                          + '|'.join(list(_UNITS) + list(_TENS) + ['hundred', 'thousand', 'and']) + r'))*)\b')
+
+
+def words_to_number(phrase):
+    """'one thousand five hundred eighty five' -> 1585; 'fifteen thirty five' -> 1535 (spoken price style)."""
+    words = [w for w in re.split(r'[\s-]+', phrase.strip()) if w and w != 'and']
+    if not words:
+        return None
+    if 'hundred' not in words and 'thousand' not in words:
+        groups, index = [], 0
+        while index < len(words):
+            if words[index] in _TENS and index + 1 < len(words) and words[index + 1] in _UNITS and _UNITS[words[index + 1]] < 10:
+                groups.append(_TENS[words[index]] + _UNITS[words[index + 1]])
+                index += 2
+            else:
+                groups.append(_TENS.get(words[index], _UNITS.get(words[index])))
+                index += 1
+        if any(g is None for g in groups):
+            return None
+        # "fifteen thirty five" is how a $1,535 price is often read; two groups of two digits.
+        return groups[0] * 100 + groups[1] if len(groups) == 2 and groups[1] >= 10 else groups[0] if len(groups) == 1 else None
+    total = current = 0
+    for word in words:
+        if word in _UNITS:
+            current += _UNITS[word]
+        elif word in _TENS:
+            current += _TENS[word]
+        elif word == 'hundred':
+            current = (current or 1) * 100
+        elif word == 'thousand':
+            total += (current or 1) * 1000
+            current = 0
+        else:
+            return None
+    return total + current
+
+
+def spoken_to_digits(text):
+    """Replace spoken number phrases with digits; STT often renders prices as words."""
+    def swap(match):
+        value = words_to_number(match.group(1))
+        return str(value) if value is not None else match.group(1)
+    return _NUMBER_WORD.sub(swap, text)
+
+
 def heard_total(text, total):
     """True when the quote total appears in what the buyer actually heard."""
     if total is None or not text:
         return False
-    normalized = re.sub(r'[,$]', '', text.lower())
+    normalized = spoken_to_digits(re.sub(r'[,$]', '', text.lower()))
     cents = f'{total:.2f}'
     whole, fraction = cents.split('.')
-    patterns = [re.escape(cents), rf'{whole}\s+dollars?\s+(and\s+)?{fraction}\s+cents?']
+    patterns = [rf'\b{re.escape(cents)}\b', rf'\b{whole}\s+dollars?\s+(and\s+)?{fraction}(\s+cents?)?\b', rf'\b{whole}\s+{fraction}\b']
     if fraction == '00':
         patterns.append(rf'\b{whole}(\.0+)?\s+dollars?')
         patterns.append(rf'\b{whole}\b(?!\.\d)')

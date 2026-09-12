@@ -1,5 +1,6 @@
 """Assigned-task and supplier-mail transport for the actual Hermes buyer."""
 from copy import deepcopy
+from datetime import datetime
 from html.parser import HTMLParser
 import json
 import os
@@ -19,6 +20,130 @@ from bridge import CONTRACTOR, BridgeError, extract_response, load_personality, 
 
 MAX_CONSECUTIVE_CONTINUATIONS = 3
 MAX_TOTAL_CONTINUATIONS = 12
+
+
+def notify_question(api, state, persist, comment_id, question, kind='clarification'):
+    """A confirmed task question owns one durable, best-effort DM notification."""
+    records = state.setdefault('question_notifications', {})
+    if comment_id not in records:
+        opening = 'A material substitution needs your approval.' if kind == 'approval' else 'I need your input on a material detail.'
+        summary = safe_reply(question).split('\n\n', 1)[0].strip()[:220]
+        body = {'content': opening + '\n\n' + summary + '\n\nPlease reply in the task: '
+                + '[Open task](https://app.ambiguous.ai/tasks?task=' + state['task_id'] + ')'}
+        records[comment_id] = {'comment_id': comment_id, 'kind': kind, 'body': body, 'status': 'queued', 'attempts': 0}
+        persist()
+    record = records[comment_id]
+    if record['status'] in ('sent', 'unresolved', 'failed'):
+        return record
+    if record.get('attempts', 0) >= 3:
+        record['status'] = 'unresolved' if record.get('sent_at') else 'failed'
+        persist()
+        return record
+    record['attempts'] += 1
+    persist()
+    try:
+        if record['status'] in ('sending', 'uncertain'):
+            # A POST may already have succeeded. Reconcile exact author/body/time;
+            # never issue a second POST for an uncertain notification.
+            matches, cursor, seen = [], None, set()
+            while True:
+                query = {'limit': 100}
+                if cursor:
+                    query['cursor'] = cursor
+                page = api.call('/api/channels/' + record['channel_id'] + '/messages', **query)
+                for row in page.get('data', []):
+                    try:
+                        recent = datetime.fromisoformat(row['created_at'].replace('Z', '+00:00')) >= datetime.fromisoformat(record['sent_at'].replace('Z', '+00:00'))
+                    except (KeyError, TypeError, ValueError):
+                        recent = False
+                    if (recent and (row.get('author') or {}).get('id') == state['agent_id']
+                            and row.get('content') == record['body']['content'] and not row.get('deleted_at')
+                            and not row.get('edited_at')):
+                        matches.append(row)
+                if not page.get('has_more'):
+                    break
+                cursor = page.get('next_cursor')
+                if not cursor or cursor in seen:
+                    raise BridgeError('Notification message pagination did not advance')
+                seen.add(cursor)
+            unique = {row['id']: row for row in matches}
+            if len(unique) == 1:
+                record.update(status='sent', remote_id=next(iter(unique)))
+            else:
+                record.update(status='uncertain', error='Notification delivery requires reconciliation')
+        else:
+            if any(other is not record and other['body'] == record['body'] and other['status'] in ('sending', 'uncertain', 'unresolved') for other in records.values()):
+                raise BridgeError('An identical earlier notification needs reconciliation')
+            channels = api.call('/api/channels')
+            if channels.get('has_more'):
+                raise BridgeError('Notification channel list is incomplete')
+            eligible = []
+            for channel in channels.get('data', []):
+                if channel.get('type') != 'dm' or channel.get('archived_at'):
+                    continue
+                detail = api.call('/api/channels/' + channel['id'])
+                members = {m.get('user_id') for m in detail.get('members', [])}
+                if detail.get('type') == 'dm' and members == {CONTRACTOR, state['agent_id']}:
+                    eligible.append(channel['id'])
+            if len(eligible) != 1:
+                raise BridgeError('A unique contractor DM channel is required')
+            record.update(status='sending', channel_id=eligible[0], sent_at=store.now())
+            persist()
+            sent = api.call('/api/channels/' + eligible[0] + '/messages', 'POST', record['body'])
+            if not sent.get('id') or sent.get('content') != record['body']['content']:
+                raise BridgeError('Notification response lacks a confirmed message')
+            record.update(status='sent', remote_id=sent['id'])
+    except (BridgeError, ValueError, OSError) as error:
+        record['status'] = 'uncertain' if record.get('sent_at') else 'queued'
+        record['error'] = safe_reply(str(error))
+    if record['status'] != 'sent' and record['attempts'] >= 3:
+        record['status'] = 'unresolved' if record.get('sent_at') else 'failed'
+    if record['status'] == 'sent':
+        record.pop('error', None)
+    persist()
+    return record
+
+
+def notify_pending_questions(api, state, persist):
+    visited = set()
+    for proposal in state.get('proposals', {}).values():
+        if proposal.get('status') == 'pending' and proposal.get('question_comment_id'):
+            notify_question(api, state, persist, proposal['question_comment_id'],
+                            proposal.get('input', {}).get('question', 'Please review the proposed material change in the task.'), 'approval')
+            visited.add(proposal['question_comment_id'])
+    missing = any(r.get('missing_essentials') for r in state.get('requirements', []))
+    legacy = []
+    for publication in list(state.get('publications', {}).values()):
+        content = publication.get('body', {}).get('content', '')
+        if publication.get('remote_id') and publication.get('question'):
+            notify_question(api, state, persist, publication['remote_id'], content)
+            visited.add(publication['remote_id'])
+        elif (publication.get('remote_id') and missing and '?' in content
+                and re.search(r'facing|fitting|faced|unfaced', content, re.I)):
+            legacy.append(publication)
+    # Old turns repeated the same missing-essential questions without marking
+    # them. Backfill at most one ping, and none once the contractor has replied
+    # to that question sequence (including a reply arriving during a long turn).
+    def timestamp(value):
+        try:
+            return datetime.fromisoformat(value.replace('Z', '+00:00')).timestamp()
+        except (AttributeError, TypeError, ValueError):
+            return None
+    starts = [timestamp(p.get('at')) for p in legacy]
+    starts = [value for value in starts if value is not None]
+    answered = any(
+        source.get('channel') == 'contractor_comment'
+        and (source.get('data', {}).get('author') or {}).get('id') == CONTRACTOR
+        and not source.get('data', {}).get('deleted_at')
+        and (timestamp(source.get('data', {}).get('created_at')) or 0) >= min(starts)
+        for source in state.get('evidence', {}).values()) if starts else False
+    if legacy and not answered:
+        latest = max(enumerate(legacy), key=lambda item: (timestamp(item[1].get('at')) or 0, item[0]))[1]
+        notify_question(api, state, persist, latest['remote_id'], latest['body']['content'])
+        visited.add(latest['remote_id'])
+    for record in list(state.get('question_notifications', {}).values()):
+        if record['comment_id'] not in visited and record['status'] in ('queued', 'sending', 'uncertain'):
+            notify_question(api, state, persist, record['comment_id'], '')
 
 
 def progress_fields(before, after):
@@ -135,6 +260,12 @@ Inspect catalog facts, retain every requirement and missing essential, and ask
 suppliers for missing product/offer facts. Only ask Christoph for missing intent
 or a concrete changed product specification. Continue independent materials.
 Never invent stock, fees, tax treatment, compatibility, competing quotes or savings.
+The contractor asks to be called Bill for this house project. Keep task comments
+brief and focused on concrete offers, choices, delivery and the next decision.
+Genuine remote supplier exchanges in the authored market are live exchanges;
+do not call them replay offers. Keep scenario/product-data provenance in the
+shared demo context rather than repeating it in every update. Preserve source
+evidence and all commercial conditions; an actual recorded replay remains a replay.
 
 Tool entry: python /workspace/buyer/cli.py --task-id TASK_ID COMMAND --input JSON_FILE
 Use snapshot (no --input) first to inspect current persisted state. Keep temporary
@@ -188,7 +319,12 @@ contractor question including actual costs/spec changes>}. May reference candida
 and product_revision instead of quote. Only current explicit contractor answer counts.
 plan: {quote_ids:[...]} evaluates whole confirmed packages and coverage. Inspect blockers.
 publish: {id:<unique stable ID>,plan:true} posts the evaluated explained package, or
-{id,content:<brief factual progress/question>} posts a task comment.
+{id,content:<brief factual progress/question>,question:true} posts a contractor
+question and sends one short DM with a direct task link. Set question:true for
+every missing-essential question; ordinary progress comments omit it. Decision
+requests send this notification automatically. Ask and answer in the task thread;
+the DM is only a pointer. Publish questions with this tool rather than only in
+your final response, so the contractor receives the ping immediately.
 When your work is ready and the evaluated plan is complete, publish with plan:true
 and final:true to deliver the recommendation and finish the task. No orders are made.
 
@@ -409,6 +545,7 @@ class Procurement:
                         'The material request changed. I’ve paused supplier actions so the earlier quotes and approvals aren’t applied to the revised list.')
                     continue
                 changed = self.ingest(state, task_comments, mail)
+                notify_pending_questions(self.api, state, persist)
                 if state.get('phase') == 'generating':
                     state.update(paused=True, phase='interrupted')
                     persist()
@@ -436,6 +573,7 @@ class Procurement:
                     blocker = successful_turn(state, snapshot)
                     persist()
                     comment(self.api, state, persist, 'turn-' + str(snapshot['turn']), answer)
+                    notify_pending_questions(self.api, state, persist)
                     if blocker:
                         comment(self.api, state, persist, 'continuation-blocked-' + str(snapshot['turn']), blocker)
             except (BridgeError, ValueError, OSError) as error:

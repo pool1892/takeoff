@@ -3,6 +3,8 @@ import json
 import sqlite3
 from pathlib import Path
 import tempfile
+import threading
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -69,6 +71,52 @@ class BridgeTests(unittest.TestCase):
         self.assertEqual(len(self.turns), 1)
         self.assertEqual(len(self.api.sends), 1)
         self.assertEqual(json.loads(self.path.read_text())['messages'][MESSAGE]['reply_id'], REPLY)
+
+    def test_dm_replies_while_one_procurement_turn_is_blocked(self):
+        entered, release, finished, stop = (threading.Event() for _ in range(4))
+        task_calls = []
+        def task_poll():
+            task_calls.append(threading.current_thread().name)
+            entered.set()
+            if not release.wait(2):
+                raise AssertionError('DM polling did not release the blocked task')
+            finished.set()
+        dm = self.instance()
+        def dm_poll():
+            try:
+                self.assertTrue(entered.wait(1))
+                self.assertFalse(finished.is_set())
+                dm.poll()
+                self.assertEqual(len(self.api.sends), 1)
+                self.assertFalse(finished.is_set())
+            finally:
+                stop.set()
+                release.set()
+        result = bridge.poll_services(SimpleNamespace(poll=dm_poll), SimpleNamespace(poll=task_poll), stop=stop)
+        self.assertEqual(result, 0)
+        self.assertTrue(finished.is_set())
+        self.assertEqual(task_calls, ['takeoff-procurement'])
+        self.assertEqual(len(self.turns), 1)
+
+    def test_procurement_worker_failure_is_reported_and_worker_stops(self):
+        calls = []
+        def task_poll():
+            calls.append('task')
+            raise ValueError('unexpected worker failure')
+        with self.assertRaisesRegex(ValueError, 'unexpected worker failure'):
+            bridge.poll_services(SimpleNamespace(poll=lambda: None), SimpleNamespace(poll=task_poll))
+        self.assertEqual(calls, ['task'])
+        self.assertFalse(any(t.name == 'takeoff-procurement' for t in threading.enumerate()))
+
+    def test_once_retains_one_poll_per_service_and_reports_transport_failure(self):
+        calls = []
+        dm = SimpleNamespace(poll=lambda: calls.append('dm'))
+        task = SimpleNamespace(poll=lambda: calls.append('task'))
+        self.assertEqual(bridge.poll_services(dm, task, once=True), 0)
+        self.assertEqual(calls, ['dm', 'task'])
+        def fail():
+            raise bridge.BridgeError('transport unavailable')
+        self.assertEqual(bridge.poll_services(dm, SimpleNamespace(poll=fail), once=True), 1)
 
     def test_same_text_new_message_is_new_turn_with_history(self):
         self.instance().poll()

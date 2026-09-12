@@ -11,7 +11,8 @@ elsewhere). Keys are read from the runtime environment and never printed.
 | AI supplier (Tapan, PR #30) | `integrations.voice.live` | supplier WebSocket call, whole-WAV turns | `gpt-live-1` bridged to turns |
 | Cascaded fallback | `integrations.voice.call` | same supplier WebSocket | TTS out / STT in, model-chosen text |
 
-Delegated decisions default to `gpt-5.6-luna` with `reasoning.effort=max`
+Delegated decisions default to `gpt-5.6-luna` with `reasoning.effort=xhigh` —
+the Live delegation accepts `none…xhigh` and rejects `max` with HTTP 400
 (`TAKEOFF_VOICE_MODEL`, `TAKEOFF_VOICE_REASONING`, `TAKEOFF_VOICE_SERVICE_TIER`
 override). Code owns the hard gates in every path: authorization checks on
 proposals, exact-readback or spoken confirmation, exchange/time budgets, end of

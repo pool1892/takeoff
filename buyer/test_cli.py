@@ -108,6 +108,20 @@ class CLITests(unittest.TestCase):
         self.assertEqual(repeated, result)
         self.assertEqual(api.calls, [])
 
+    def test_published_question_notifies_only_after_confirmed_task_comment(self):
+        api = FakeAPI(response={'id': 'question-comment'})
+        with patch('procurement.notify_question') as notify:
+            result = cli.execute('publish', {'id': 'ask-facing', 'content': 'Faced or unfaced?', 'question': True},
+                                 self.state, self.persist, api)
+            self.assertEqual(result['comment_id'], 'question-comment')
+            self.assertEqual(notify.call_args.args[3:], ('question-comment', 'Faced or unfaced?'))
+            self.assertTrue(self.state['publications']['ask-facing']['question'])
+        with patch('procurement.notify_question') as notify:
+            with self.assertRaises(TimeoutError):
+                cli.execute('publish', {'id': 'another-question', 'content': 'Which fitting system?', 'question': True},
+                            self.state, self.persist, FakeAPI(failure=TimeoutError('lost response')))
+            notify.assert_not_called()
+
     def test_changed_action_payload_cannot_reuse_confirmed_identity(self):
         api = FakeAPI()
         cli.execute("send", inquiry(), self.state, self.persist, api)
@@ -193,7 +207,9 @@ class CLITests(unittest.TestCase):
                     "changed_attributes": {"type": "moisture"}}
         payload = {"proposal": proposal, "question": "Approve moisture board instead of regular board?"}
         api = FakeAPI(response={"id": "question-comment"})
-        first = cli.execute("decision", payload, self.state, self.persist, api)
+        with patch('procurement.notify_question') as notify:
+            first = cli.execute("decision", payload, self.state, self.persist, api)
+            self.assertEqual(notify.call_args.args[3:], ('question-comment', payload['question'], 'approval'))
         repeated = cli.execute("decision", deepcopy(payload), self.state, self.persist, api)
         self.assertEqual(repeated, first)
         for changed in ({"proposal": {**proposal, "product_id": "different"}, "question": payload["question"]},

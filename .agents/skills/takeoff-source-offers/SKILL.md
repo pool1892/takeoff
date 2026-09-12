@@ -49,6 +49,15 @@ Keep missing facts and contradicted attributes visible together. An approval mus
 be validated by `buyer.decisions`, current, and scoped to the exact product and
 changed attributes; it cannot supply missing evidence or waive unrelated facts.
 
+Put requests for documentation in a requirement's `evidence_attributes`, for
+example `[use_evidence_ref]`. These require nonempty supplier specification
+fields; they do not prescribe a literal reference value. Keep the actual use
+constraint in `specifications`, such as `manufacturer_stated_use: interior wall
+tile backing`. Never invent values like "required from supplier product
+information" in exact specifications. Reference presence preserves a documented
+source; it does not certify engineering suitability. Unknown or mismatching
+exact specifications still require evidence or approval.
+
 Use `quantity_for_requirement` for explicit pack arithmetic. `pack_size` is the
 order increment measured in the product's quoted `unit`, and `minimum_quantity`
 uses that same unit. For a carton priced per carton, `pack_size: 1` means whole
