@@ -1,0 +1,60 @@
+# Credentials and machine-local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.ambi/
+.claude/settings.local.json
+.codex/config.local.toml
+
+# Isolated agent runtimes and private data
+.local/
+.hermes/
+hermes-home/
+data/
+logs/
+captures/
+recordings/
+artifacts/
+vendor/
+*.log
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# Python
+.venv/
+.venv-*/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# JavaScript/build tooling
+node_modules/
+dist/
+build/
+coverage/
+.next/
+.cache/
+.turbo/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Editors and operating systems
+.DS_Store
+._*
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
