@@ -24,7 +24,7 @@ platform_toolsets:
 compression:
   enabled: true
   in_place: true
-  threshold_tokens: 60000
+  threshold_tokens: 20000
   target_ratio: 0.20
   tail_mode: legacy
   protect_first_n: 0

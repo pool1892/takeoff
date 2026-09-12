@@ -210,6 +210,65 @@ def successful_turn(state, before):
     return 'I’ve reached the automatic continuation limit before completing the package. The recorded work is preserved; the run needs review before continuing.'
 
 
+def decision_text(content):
+    """Extract only simple visible editor text for exact decision matching.
+
+    This is deliberately narrower than rendering HTML: quoted blocks, hidden
+    attributes, executable content, comments and malformed markup cannot approve.
+    The original comment remains unchanged in the evidence store.
+    """
+    if not isinstance(content, str):
+        return ''
+    class DecisionText(HTMLParser):
+        allowed = {'p', 'strong', 'b', 'em', 'i', 'u', 'br'}
+
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.parts, self.stack, self.valid = [], [], True
+
+        def handle_starttag(self, tag, attrs):
+            if tag not in self.allowed or attrs:
+                self.valid = False
+            if tag in ('p', 'br'):
+                self.parts.append('\n')
+            if tag != 'br':
+                self.stack.append(tag)
+
+        def handle_endtag(self, tag):
+            if not self.stack or self.stack.pop() != tag:
+                self.valid = False
+            if tag == 'p':
+                self.parts.append('\n')
+
+        def handle_startendtag(self, tag, attrs):
+            if tag != 'br' or attrs:
+                self.valid = False
+            self.parts.append('\n')
+
+        def handle_data(self, data):
+            self.parts.append(data)
+
+        def handle_comment(self, data):
+            self.valid = False
+
+        def handle_decl(self, decl):
+            self.valid = False
+
+        def unknown_decl(self, data):
+            self.valid = False
+
+        def handle_pi(self, data):
+            self.valid = False
+
+    parser = DecisionText()
+    try:
+        parser.feed(content)
+        parser.close()
+    except (ValueError, AssertionError):
+        return ''
+    return ''.join(parser.parts) if parser.valid and not parser.stack else ''
+
+
 def mail_text(message):
     text = message.get('body_text') or message.get('body_markdown') or message.get('body')
     if isinstance(text, str) and text.strip():
@@ -246,6 +305,16 @@ def task_response(diagnostics, database):
         last = connection.execute('SELECT role,content,tool_calls FROM messages WHERE session_id=? AND active=1 ORDER BY id DESC LIMIT 1', (ids[-1],)).fetchone()
     if not session or not session[0] or not last or last[0] != 'assistant' or not last[1] or last[2] not in (None, '[]'):
         raise BridgeError('Task session did not end with a completed assistant response')
+    # Hermes can persist an internal failure as the final assistant message and
+    # exit successfully. Keep that evidence in its native DB, but do not publish
+    # it as a procurement update or treat the turn as successful.
+    failed_final = re.match(
+        r"(?:I reached the maximum iterations \(\d+\) but (?:couldn't|could not|couldn’t) summarize\b"
+        r'|(?:Error:\s*)?(?:Rate limit reached\b|(?:API |LLM )?request (?:error|failed)\b'
+        r'|(?:openai\.)?(?:RateLimitError|APIConnectionError|BadRequestError)\b))',
+        last[1].strip(), re.I)
+    if failed_final:
+        raise BridgeError('Task turn failed; inspect persisted actions before resuming')
     return ids[-1], safe_reply(last[1])
 
 
@@ -317,7 +386,11 @@ decision: {proposal:{id,run_id,request_revision,requirement_id,product_id,
 changed_attributes:<exact new values>,quote_id,quote_revision},question:<concrete
 contractor question including actual costs/spec changes>}. May reference candidate_id
 and product_revision instead of quote. Only current explicit contractor answer counts.
-plan: {quote_ids:[...]} evaluates whole confirmed packages and coverage. Inspect blockers.
+plan: {quote_ids:[...]} evaluates purchases of those whole confirmed packages and coverage.
+Compare alternative complete supplier offers by calling plan separately with one
+quote ID each. Multiple IDs mean buying every named package; they do not mean
+choosing the cheapest one. Combine quotes only for genuinely complementary scopes.
+Inspect blockers and choose the next negotiation action using actual quoted terms.
 publish: {id:<unique stable ID>,plan:true} posts the evaluated explained package, or
 {id,content:<brief factual progress/question>,question:true} posts a contractor
 question and sends one short DM with a direct task link. Set question:true for
@@ -467,7 +540,7 @@ class Procurement:
             for proposal in state['proposals'].values():
                 if c.get('parent_id') != proposal.get('question_comment_id') or proposal.get('status') != 'pending':
                     continue
-                match = re.fullmatch(r'\s*(Approve|Reject)\s+' + re.escape(proposal['id']) + r'[.!]?\s*', c.get('content', ''), re.I)
+                match = re.fullmatch(r'\s*(Approve|Reject)\s+' + re.escape(proposal['id']) + r'[.!]?\s*', decision_text(c.get('content', '')), re.I)
                 if not match:
                     continue
                 from buyer.decisions import validate_decision

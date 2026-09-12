@@ -222,6 +222,40 @@ class ProcurementTests(unittest.TestCase):
         self.assertEqual(self.state()['phase'], 'failed')
         self.assertTrue(self.state()['paused'])
 
+    def test_failed_native_final_is_never_published_as_a_successful_turn(self):
+        database = Path(self.directory.name) / 'state.db'
+        failure = ("I reached the maximum iterations (24) but couldn't summarize. Error: "
+                   'Rate limit reached in organization org-private on tokens per min (TPM).')
+        with sqlite3.connect(database) as connection:
+            connection.executescript('''
+                CREATE TABLE sessions (id TEXT PRIMARY KEY, ended_at TEXT, end_reason TEXT);
+                CREATE TABLE messages (id INTEGER PRIMARY KEY, session_id TEXT,
+                    role TEXT, content TEXT, tool_calls TEXT, active INTEGER);
+            ''')
+            connection.execute('INSERT INTO sessions VALUES (?, ?, ?)',
+                               ('session-1', '2026-09-12T23:00:00Z', 'completed'))
+            connection.execute('INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?)',
+                               (1, 'session-1', 'assistant', failure, None, 1))
+        def runner(snapshot, directory):
+            self.turns.append(snapshot)
+            with store.transaction(snapshot['task_id']) as (state, persist):
+                state['products']['p1'] = {'id': 'p1'}
+                persist()
+            return task_response('session_id: session-1\n', database)
+        listener = Procurement(self.api, AGENT, runner)
+        listener.poll()
+        listener.poll()
+        state = self.state()
+        self.assertEqual(len(self.turns), 1)
+        self.assertEqual(state['phase'], 'failed')
+        self.assertTrue(state['paused'])
+        self.assertIn('p1', state['products'])
+        published = '\n'.join(c['content'] for c in self.api.comment_records['task-1'])
+        self.assertIn('Existing quotes and messages are preserved', published)
+        self.assertNotIn('org-private', published)
+        self.assertNotIn('maximum iterations', published)
+        self.assertNotIn('turn-1', state['publications'])
+
     def test_uncertain_send_after_success_requires_reconciliation(self):
         state = self.initialized()
         before = deepcopy(state)
@@ -367,6 +401,58 @@ class ProcurementTests(unittest.TestCase):
         self.listener.ingest(state, [self.answer(content='Reject sub-1')], [])
         self.assertEqual(state['approvals'][0]['decision'], 'rejected')
         self.assertEqual(state['approvals'][0]['approved_specifications'], {})
+
+    def test_rich_text_decisions_match_visible_text_and_preserve_raw_evidence(self):
+        for content, expected in (
+                ('<p>Approve sub-1</p>', 'approved'),
+                ('<p><strong>Approve</strong>&nbsp;sub&#45;1.</p>', 'approved'),
+                ('<p>Approve <strong>sub-1</strong></p><p><br></p>', 'approved'),
+                ('<p><em>Reject</em> sub-1!</p>', 'rejected')):
+            with self.subTest(content=content):
+                state = self.decision_state()
+                answer = self.answer(content=content)
+                self.listener.ingest(state, [answer], [])
+                self.assertEqual(state['approvals'][0]['decision'], expected)
+                self.assertEqual(state['approvals'][0]['source']['author_id'], CONTRACTOR)
+                self.assertEqual(state['approvals'][0]['source']['id'], answer['id'])
+                self.assertEqual(state['evidence'][answer['id']]['body'], content)
+                self.assertEqual(state['evidence'][answer['id']]['data'], answer)
+
+    def test_quoted_hidden_script_or_extra_rich_text_cannot_approve(self):
+        for content in (
+                '<p>Approve sub-1</p><p>if cheaper</p>',
+                '<p>Bill said: Approve sub-1</p>',
+                '<blockquote><p>Approve sub-1</p></blockquote>',
+                '<p>&quot;Approve sub-1&quot;</p>',
+                '<p hidden>Approve sub-1</p>',
+                '<p style="display:none">Approve sub-1</p>',
+                '<p aria-hidden="true">Approve sub-1</p>',
+                '<script>Approve sub-1</script>',
+                '<p>Approve sub-1</p><script></script>',
+                '<p>Approve sub-1</p><!-- quoted from Bill -->',
+                '<p>Approve <span hidden>sub-1</span></p>',
+                '<p>Approve sub-1',
+                '<p>Approve <strong>sub-1</p></strong>'):
+            with self.subTest(content=content):
+                state = self.decision_state()
+                self.listener.ingest(state, [self.answer(content=content)], [])
+                self.assertEqual(state['approvals'], [])
+                self.assertEqual(state['proposals']['sub-1']['status'], 'pending')
+
+    def test_rich_text_keeps_author_parent_edit_and_revision_checks(self):
+        for patch in ({'author': {'id': 'supplier'}}, {'parent_id': 'other-question'},
+                      {'edited_at': '2026-09-12T22:01:00Z'},
+                      {'updated_at': '2026-09-12T22:01:00Z'},
+                      {'deleted_at': '2026-09-12T22:01:00Z'},
+                      {'created_at': '2026-09-12T20:00:00Z', 'updated_at': '2026-09-12T20:00:00Z'}):
+            with self.subTest(patch=patch):
+                state = self.decision_state()
+                self.listener.ingest(state, [self.answer(content='<p>Approve sub-1</p>', **patch)], [])
+                self.assertEqual(state['approvals'], [])
+        state = self.decision_state()
+        state['quotes']['q1']['revision'] = 2
+        self.listener.ingest(state, [self.answer(content='<p>Approve sub-1</p>')], [])
+        self.assertEqual(state['approvals'], [])
 
     def test_deleted_or_edited_comment_cannot_approve(self):
         for patch in ({'deleted_at': '2026-09-12T22:01:00Z'}, {'edited_at': '2026-09-12T22:01:00Z'},
@@ -562,6 +648,46 @@ class TaskTransportTests(unittest.TestCase):
                                    (2, 'closed-session', role, 'An intermediate response.', calls, 1))
             with self.subTest(role=role), self.assertRaises(BridgeError):
                 task_response('session_id: closed-session\n', self.database)
+
+    def test_failed_final_diagnostics_are_rejected_and_native_evidence_is_preserved(self):
+        failures = (
+            "I reached the maximum iterations (24) but couldn't summarize. Error: "
+            'Rate limit reached for gpt-5.6-luna in organization org-private on tokens per min (TPM).',
+            'I reached the maximum iterations (24) but couldn’t summarize. Error: request failed.',
+            "I reached the maximum iterations (24) but couldn't summarize. Error: connection interrupted.",
+            'Rate limit reached for gpt-5.6-luna in organization org-private.',
+            'Error: API request failed: private provider diagnostic.',
+            'Request error: private provider diagnostic.',
+            'openai.RateLimitError: private provider diagnostic.',
+        )
+        for failure in failures:
+            with self.subTest(failure=failure):
+                with sqlite3.connect(self.database) as connection:
+                    connection.execute('UPDATE messages SET content=? WHERE id=1', (failure,))
+                with self.assertRaises(BridgeError) as caught:
+                    task_response('session_id: closed-session\n', self.database)
+                self.assertEqual(str(caught.exception),
+                                 'Task turn failed; inspect persisted actions before resuming')
+                with sqlite3.connect(self.database) as connection:
+                    self.assertEqual(connection.execute('SELECT content FROM messages WHERE id=1').fetchone()[0],
+                                     failure)
+                    self.assertEqual(connection.execute('SELECT end_reason FROM sessions').fetchone()[0],
+                                     'completed')
+
+    def test_successful_checkpoints_remain_publishable_after_iteration_limit(self):
+        summaries = (
+            'I reached the maximum iterations (24). Three supplier offers are recorded; '
+            'I’m waiting for your substitution approval. No order has been placed.',
+            'No order has been placed. The confirmed package is $123.45.',
+            'The supplier reported a request error; I obtained its corrected quote and recorded it.',
+        )
+        for summary in summaries:
+            with self.subTest(summary=summary):
+                with sqlite3.connect(self.database) as connection:
+                    connection.execute('UPDATE messages SET content=? WHERE id=1', (summary,))
+                    connection.execute("UPDATE sessions SET end_reason='max_iterations_reached'")
+                self.assertEqual(task_response('session_id: closed-session\n', self.database),
+                                 ('closed-session', summary))
 
     def test_open_session_or_missing_reported_identity_is_rejected(self):
         with sqlite3.connect(self.database) as connection:

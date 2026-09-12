@@ -83,6 +83,20 @@ class CLITests(unittest.TestCase):
         self.assertEqual(envelope['run_id'], 'run-1')
         self.assertNotIn('body_text', api.posts[0][2])
 
+    def test_snapshot_opening_comparison_is_compact_and_does_not_select(self):
+        self.state['opening_comparison'] = [{
+            'quote_id': 'q-1', 'complete': True, 'total_payable': '63.00',
+            'coverage': {'required_count': 25, 'covered_count': 25}, 'blockers': [],
+            'selected_offers': [{'lines': ['large-product-assessment ' * 10000]}]}]
+        original = deepcopy(self.state)
+        result = cli.snapshot(self.state)
+        self.assertEqual(result['opening_comparison'][0]['quote_id'], 'q-1')
+        self.assertEqual(result['opening_comparison'][0]['coverage']['covered_count'], 25)
+        self.assertNotIn('selected_offers', result['opening_comparison'][0])
+        self.assertIn('no package selected', result['opening_comparison_purpose'])
+        self.assertNotIn('plan', result)
+        self.assertEqual(self.state, original)
+
     def test_assess_all_matches_single_checks_and_skips_unknown_mapping(self):
         self.state['candidates'] = {}
         base = {'revision': 1, 'vendor_id': 'general', 'unit': 'sheet', 'pack_size': 1,
@@ -180,6 +194,33 @@ class CLITests(unittest.TestCase):
         self.assertTrue(result["complete"], result["blockers"])
         self.assertIn("received-quote", result["selected_offers"][0]["evidence_refs"])
         self.assertEqual(self.state["quotes"]["q"], original)
+        self.assertNotIn('lines', result['selected_offers'][0])
+        self.assertEqual(result['selected_offers'][0]['line_count'], 1)
+        self.assertEqual(result['line_count'], 1)
+        self.assertEqual(result['selected_offers'][0]['expires_at'], quote['expires_at'])
+        self.assertEqual(result['selected_offers'][0]['fees'], quote['fees'])
+        self.assertEqual(result['coverage'], self.state['plan']['coverage'])
+        self.assertEqual(self.snapshots[-1]['plan'], self.state['plan'])
+        self.assertEqual(self.state['events'][-1]['content'], self.state['plan'])
+        self.assertIn('lines', self.state['plan']['selected_offers'][0])
+
+    def test_plan_summary_excludes_repeated_product_assessments(self):
+        from buyer.planning import evaluate_plan
+        from buyer.test_planning import example, NOW
+        state, quote, _ = example()
+        plan = evaluate_plan(state, [quote], now=NOW)
+        offer = plan['selected_offers'][0]
+        offer['lines'] = [{'product_assessment': 'catalog evidence ' * 10000}] * 25
+        offer['conditions'] = [{'kind': 'whole_package', 'required': True}]
+        original = deepcopy(plan)
+        result = cli.plan_summary(plan)
+        self.assertLess(len(json.dumps(result)), 5000)
+        self.assertEqual(result['line_count'], 25)
+        self.assertEqual(result['selected_offers'][0]['conditions'], offer['conditions'])
+        self.assertEqual(result['selected_offers'][0]['discounts'], offer['discounts'])
+        self.assertEqual(plan, original)
+        result['selected_offers'][0]['conditions'].clear()
+        self.assertEqual(plan, original)
 
     def test_decision_crash_preserves_immutable_proposal_before_post(self):
         proposal = {"id": "substitute-1", "run_id": "run-1", "request_revision": 1,

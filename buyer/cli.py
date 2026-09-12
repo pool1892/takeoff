@@ -106,6 +106,24 @@ def all_products(value):
             yield from all_products(child)
 
 
+def plan_summary(plan):
+    """Return decision facts without repeating each line's product assessment."""
+    result = {key: deepcopy(plan.get(key)) for key in (
+        'run_id', 'evaluated_at', 'status', 'complete', 'currency', 'total_payable',
+        'known_quoted_total', 'total_basis', 'coverage', 'blockers', 'selection_reason',
+        'opening_comparison', 'ordering_authorized')}
+    result['selected_offers'] = [
+        {key: deepcopy(offer.get(key)) for key in (
+            'quote_id', 'vendor_id', 'supplier_name', 'revision', 'total', 'total_basis',
+            'expires_at', 'delivery_at', 'fees', 'discounts', 'conditions', 'evidence_refs',
+            'blockers')} | {'line_count': len(offer.get('lines', []))}
+        for offer in plan.get('selected_offers', [])]
+    result['line_count'] = sum(offer['line_count'] for offer in result['selected_offers'])
+    result['approval_ids'] = [approval['id'] for approval in plan.get('approvals_used', [])]
+    result['rejected_offers'] = deepcopy(plan.get('rejected_offers', []))
+    return result
+
+
 def snapshot(state):
     """Small working index; immutable large source bodies are read by evidence ID."""
     result = {key: deepcopy(state.get(key)) for key in ('task_id', 'run_id', 'request_revision', 'source',
@@ -128,7 +146,13 @@ def snapshot(state):
         {'content': e.get('content')} if e['type'] in ('operator_reconciled', 'turn_error', 'decision_unresolved') else {})
         for e in state.get('events', [])[-8:]]
     if state.get('plan'):
-        result['plan'] = {key: state['plan'].get(key) for key in ('complete', 'total_payable', 'blockers', 'coverage')}
+        result['plan'] = plan_summary(state['plan'])
+    if 'opening_comparison' in state:
+        result['opening_comparison'] = [
+            {key: deepcopy(comparison.get(key)) for key in (
+                'quote_id', 'complete', 'total_payable', 'coverage', 'blockers')}
+            for comparison in state['opening_comparison']]
+        result['opening_comparison_purpose'] = 'Evaluated opening packages for comparison; no package selected.'
     return result
 
 
@@ -341,7 +365,7 @@ def execute(command, payload, state, persist, api):
         state['plan'] = result
         store.event(state, 'plan', result)
         persist()
-        return result
+        return plan_summary(result)
     if command == 'publish':
         if payload.get('plan'):
             from buyer.explanation import explain_plan
