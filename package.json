@@ -3,6 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test",
+    "test:suppliers": "python3 -m pytest"
+  },
+  "devDependencies": {
+    "vite": "^7.1.7"
   }
 }

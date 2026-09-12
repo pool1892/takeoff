@@ -1,0 +1,1 @@
+nousresearch/hermes-agent@sha256:8f56a53ff3bf8f8c48842520ea4084d69e890d0efb42cf5eb591afb55337f907
