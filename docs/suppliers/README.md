@@ -69,6 +69,15 @@ The generated file includes all four vendor entries. Each uses its own identity 
 
 The default supplier runtime uses the installed Codex CLI and its existing account login. Check `codex login status`; no new OpenAI API key is needed for this local runtime. Set `runtime_backend` to `agents_api` to select the optional hosted backend, which requires `OPENAI_API_KEY`. The optional speech adapter also uses that key separately.
 
+The current deployment still requires the supplier computer: it runs the catalog
+server, Ambiguous mailbox worker, commercial ledger, and custom tool execution.
+Codex provides model access through the existing account; it does not deploy those
+services to an OpenAI-hosted sandbox. The optional `agents_api` adapter also uses
+`environment: {type: none}` and executes custom tools in this service. An
+[OpenAI-hosted sandbox](https://developers.openai.com/api/docs/guides/agents-api/environments/openai-hosted)
+deployment would be a separate migration, including persistent state and a reachable
+catalog endpoint. Keep the server, worker, and tunnel running for the current demo.
+
 Codex uses isolated supplier threads and host-controlled catalog, inquiry, and offer tools. The host connects those agents to Ambiguous mail and records. Personal Codex tools and filesystem execution are disabled for supplier turns. The hosted backend additionally supports read-only Ambiguous MCP and optional Exa MCP through `exa_mcp_url`; keep credential-bearing URLs in ignored configuration. Exa research in the Codex backend and trading execution remain extensions.
 
 For each participating vendor, configure `buyers` as `{"takeoff-hermes@takeoffai.ambi.cc": "demo-buyer"}` (or the same logical buyer ID configured for its run). Chat uses `chat_threads` pairs of `[channel_id, root_message_id]` and `chat_buyers` mapping sender user IDs to the logical buyer ID. Polling is limited to those configured senders and threads. Email is the cross-workspace agent transport; chat is supported within configured workspace conversations. Actual cross-computer delivery and response still require a captured round trip.
