@@ -450,6 +450,7 @@ correct your input or explain the specific missing fact rather than bypass valid
 class Procurement:
     def __init__(self, api, user_id, runner=invoke):
         self.api, self.user_id, self.runner = api, user_id, runner
+        self.mailbox_id = os.environ.get('TAKEOFF_AMBIGUOUS_MAILBOX_ID', '').strip() or None
 
     def tasks(self):
         result, cursor, seen = [], None, set()
@@ -466,10 +467,12 @@ class Procurement:
                 raise BridgeError('Task pagination did not advance')
             seen.add(cursor)
 
-    def inbox(self):
+    def inbox(self, mailbox_id=None):
         result, cursor, seen = [], None, set()
         while True:
             query = {'limit': 100, 'detail': 'full', 'threaded': 'false'}
+            if mailbox_id:
+                query['mailbox_id'] = mailbox_id
             if cursor:
                 query['cursor'] = cursor
             page = self.api.call('/api/mail/inbox', **query)
@@ -490,6 +493,7 @@ class Procurement:
         source = {'title': task.get('title', ''), 'description': task.get('description', '')}
         state.update(task_id=task['id'], agent_id=self.user_id, contractor_id=CONTRACTOR,
             run_id=config['run_id'], request_revision=1, source=source, source_hash=store.digest(source),
+            mailbox_id=self.mailbox_id,
             source_task_created_at=task.get('created_at'), started_at=store.now(),
             authority={'supplier_inquiries': True, 'supplier_negotiation': True, 'allow_orders': False, 'currency': 'USD'},
             suppliers=config['suppliers'], catalog_urls=config.get('catalog_urls', []),
@@ -565,11 +569,19 @@ class Procurement:
             if address not in senders or state['evidence'].get(m['id'], {}).get('body'):
                 continue
             body = mail_text(m)
-            if not body:
-                body = mail_text(self.api.call('/api/mail/' + m['id']))
+            auth = m.get('inbound_auth') or {}
+            if not body or not auth.get('verdict'):
+                # Shared inbox list rows can omit body/authentication fields.
+                # Read authoritative message detail before accepting evidence.
+                m = {**m, **self.api.call('/api/mail/' + m['id'])}
+                sender = m.get('from') or m.get('from_user') or {}
+                address = sender.get('email', '').lower() if isinstance(sender, dict) else ''
+                if address not in senders:
+                    continue
+                body = mail_text(m)
+                auth = m.get('inbound_auth') or {}
             if not isinstance(body, str):
                 continue
-            auth = m.get('inbound_auth') or {}
             if auth.get('verdict') != 'aligned':
                 continue
             exact_run = re.search(r'(?<![A-Za-z0-9_-])' + re.escape(state['run_id']) + r'(?![A-Za-z0-9_-])', body + ' ' + m.get('subject', ''))
@@ -600,7 +612,7 @@ class Procurement:
         if not config.get('enabled') or not config.get('run_id') or not config.get('suppliers') or not config.get('task_ids'):
             return
         tasks = self.tasks()
-        mail = self.inbox() if tasks else []
+        mail_by_mailbox = {}
         for entry in tasks:
             task = self.api.call(f"/api/tasks/{entry['id']}")['task']
             if task.get('assignee_id') != self.user_id or task.get('status') in ('done', 'cancelled'):
@@ -620,6 +632,12 @@ class Procurement:
                     comment(self.api, state, persist, 'source-changed-' + store.digest(source)[:12],
                         'The material request changed. I’ve paused supplier actions so the earlier quotes and approvals aren’t applied to the revised list.')
                     continue
+                # Bind the sender and reply inbox for the life of this run.
+                # Legacy runs without a binding continue using personal mail.
+                mailbox_id = state.get('mailbox_id')
+                if mailbox_id not in mail_by_mailbox:
+                    mail_by_mailbox[mailbox_id] = self.inbox(mailbox_id)
+                mail = mail_by_mailbox[mailbox_id]
                 changed = self.ingest(state, task_comments, mail)
                 notify_pending_questions(self.api, state, persist)
                 if state.get('phase') == 'generating':

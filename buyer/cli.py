@@ -288,6 +288,8 @@ def execute(command, payload, state, persist, api):
             if prior.get('result'):
                 result = prior['result']
                 return {'action_id': action_id, 'mail_id': result.get('id'), 'delivery_status': result.get('delivery_status')}
+            if prior.get('mailbox_id') != state.get('mailbox_id'):
+                raise ValueError('Uncertain supplier send must retain its original mailbox')
             body = prior['body']
         else:
             action = validate_action(payload, state, current_quotes(state), state.get('approvals', []))
@@ -299,13 +301,22 @@ def execute(command, payload, state, persist, api):
             for key in ('previous_quote_id', 'target_total', 'currency', 'items'):
                 if key in action:
                     envelope[key] = action[key]
+            mail_content = json.dumps(envelope)
+            # Enable only after the supplier confirms mixed-text extraction.
+            # Existing uncertain sends always retain their saved original body.
+            if os.environ.get('TAKEOFF_SUPPLIER_MAIL_MESSAGE_FIRST') == '1':
+                mail_content = envelope['message'] + '\n\n---\n\n```json\n' + mail_content + '\n```'
             body = {'to': [supplier['email']], 'subject': f"Takeoff {state['run_id']} {action_id}",
-                'body_markdown': json.dumps(envelope), 'idempotency_key': 'takeoff-' + state['task_id'] + '-' + action_id,
+                'body_markdown': mail_content,
+                'idempotency_key': 'takeoff-' + state['task_id'] + '-' + action_id,
                 'undo_send_seconds': 0, 'include_signature': False}
-            state['actions'][action_id] = {'id': action_id, 'input': payload, 'body': body, 'status': 'sending', 'at': store.now()}
+            state['actions'][action_id] = {'id': action_id, 'input': payload, 'body': body,
+                'mailbox_id': state.get('mailbox_id'), 'status': 'sending', 'at': store.now()}
             state['remaining_actions'] = state.get('remaining_actions', 40) - 1
             persist()
-        result = api.call('/api/mail/send', 'POST', body)
+        mailbox_id = state['actions'][action_id].get('mailbox_id')
+        query = {'mailbox_id': mailbox_id} if mailbox_id else {}
+        result = api.call('/api/mail/send', 'POST', body, **query)
         state['actions'][action_id].update(result=result, status=result.get('delivery_status', 'unknown'))
         store.event(state, 'supplier_send', {'action_id': action_id, 'delivery_status': result.get('delivery_status'), 'mail_id': result.get('id')})
         persist()

@@ -11,7 +11,7 @@ import procurement
 
 
 class BuyerModelConfigTests(unittest.TestCase):
-    def test_dm_and_resumed_task_explicitly_pin_luna_max_and_direct_provider(self):
+    def test_dm_and_resumed_task_explicitly_pin_sol_medium_and_direct_provider(self):
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'HERMES_HOME': directory}):
             for module in (bridge, procurement):
                 process = SimpleNamespace(returncode=0, communicate=lambda timeout: ('fixture output', 'session_id: session-1\n'))
@@ -20,7 +20,8 @@ class BuyerModelConfigTests(unittest.TestCase):
                         patch.object(module.subprocess, 'Popen', return_value=process) as launch:
                     if module is bridge:
                         with patch.object(bridge, 'extract_response', return_value='Ready.'):
-                            bridge.run_hermes({'content': 'Continue.'}, [], Path(directory))
+                            bridge.run_hermes({'id': '00000000-0000-4000-8000-000000000001',
+                                               'content': 'Continue.'}, [], Path(directory))
                     else:
                         state = {'task_id': 'task-1', 'hermes_session_id': 'stored-sol-session'}
                         with patch.object(procurement, 'run_snapshot', return_value=state), \
@@ -30,11 +31,9 @@ class BuyerModelConfigTests(unittest.TestCase):
                     self.assertEqual(command[command.index('--model') + 1], 'gpt-5.6-sol')
                     self.assertEqual(command[command.index('--provider') + 1], 'takeoff-openai')
                     self.assertEqual(command[command.index('--reasoning') + 1], 'medium')
+                    self.assertEqual(command[command.index('--toolsets') + 1], 'terminal')
                     if module is procurement:
                         self.assertEqual(command[command.index('--resume') + 1], 'stored-sol-session')
-                        self.assertEqual(command[command.index('--toolsets') + 1], 'terminal')
-                    else:
-                        self.assertNotIn('--toolsets', command)
 
 
 if __name__ == '__main__':

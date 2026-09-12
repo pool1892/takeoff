@@ -24,6 +24,26 @@ for scenario provenance and the distinction between live channels and material d
 
 ## Enable an actual task
 
+A contractor can also start through Chip's direct chat. Configure the ignored
+`.local/hermes/procurement/intake-config.json` with `enabled`, a fresh `run_id`,
+`suppliers`, `catalog_urls`, `project_id`, and `armed_at` (UTC). Optional
+`expected_mailbox_id` verifies the intended shared mailbox. The DM model invokes
+`python /workspace/integrations/ambiguous/intake.py --message-id MESSAGE_UUID`.
+The tool reads the actual unedited contractor DM, preserves its text in a new
+assigned task, verifies contractor project access and subscription, then enables
+that task's procurement configuration. A durable message journal prevents a
+second task or reuse of the supplier run. Merely drafting a chat message starts
+nothing; the contractor sends it.
+
+Set `TAKEOFF_AMBIGUOUS_MAILBOX_ID` in the ignored runtime `.env` to use Builders Co
+or another authorized shared mailbox for both supplier sending and reply ingestion.
+The listener binds this setting when a task is initialized. Existing runs retain
+their original mailbox, including personal mail for legacy runs. Restart the chat
+listener after changing its environment; the separate voice server is unaffected.
+Supplier mail remains the strict JSON envelope by default. The optional
+`TAKEOFF_SUPPLIER_MAIL_MESSAGE_FIRST=1` adds the model's readable message before
+that envelope only when the receiving supplier supports mixed-text parsing.
+
 Use the isolated credentials and runtime described in [Ambiguous setup](ambiguous.md).
 The ignored configuration is `.local/hermes/procurement/config.json`, resolved
 inside the container through `HERMES_HOME`. Its shape is:

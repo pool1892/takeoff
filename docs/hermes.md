@@ -111,7 +111,8 @@ The buyer uses an internal Docker network with `gateway_mode_ipv4=isolated`, so
 even a host service listening on every address is not available via a bridge
 gateway. It has no default route. A separate unprivileged proxy allows HTTPS only
 to `api.openai.com`, `api.ambiguous.ai`, `app.ambiguous.ai`, and the agreed supplier
-host `multiply-cameo-clash.ngrok-free.dev`, rejecting private,
+hosts `multiply-cameo-clash.ngrok-free.dev` and
+`supplier-codex-production.up.railway.app`, rejecting private,
 loopback, and link-local DNS results. TLS stays end to end; the proxy has no
 credentials or repo/state mount. Each launch creates and removes its own proxy
 and private network. This requires Docker Engine 28 or later and fails closed on

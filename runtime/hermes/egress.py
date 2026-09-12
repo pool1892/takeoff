@@ -12,7 +12,8 @@ import time
 
 
 ALLOWED_HOSTS = frozenset({'api.openai.com', 'api.ambiguous.ai', 'app.ambiguous.ai',
-                           'multiply-cameo-clash.ngrok-free.dev'})
+                           'multiply-cameo-clash.ngrok-free.dev',
+                           'supplier-codex-production.up.railway.app'})
 PORT = 3128
 HEADER_LIMIT = 32768
 HEADER_TIMEOUT = 10

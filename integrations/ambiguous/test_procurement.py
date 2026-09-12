@@ -35,6 +35,8 @@ class FakeAPI:
             return {'data': deepcopy(self.mail), 'has_more': False}
         if path == '/api/mail/send':
             return {'id': 'sent-mail-1', 'delivery_status': 'sent'}
+        if path.startswith('/api/mail/'):
+            return deepcopy(next(m for m in self.mail if m['id'] == path.rsplit('/', 1)[-1]))
         parts = path.split('/')
         if len(parts) >= 4 and parts[2] == 'tasks':
             task_id = parts[3]
@@ -56,7 +58,8 @@ class ProcurementTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
-        self.environment = patch.dict(os.environ, {'HERMES_HOME': self.directory.name})
+        self.environment = patch.dict(os.environ, {'HERMES_HOME': self.directory.name,
+                                                   'TAKEOFF_AMBIGUOUS_MAILBOX_ID': ''})
         self.environment.start()
         self.addCleanup(self.environment.stop)
         self.task = {'id': 'task-1', 'title': 'House materials', 'description': 'Find matching material offers.',
@@ -161,6 +164,50 @@ class ProcurementTests(unittest.TestCase):
         self.assertEqual(self.turns[-1]['hermes_session_id'], 'session-1')
         self.assertEqual(len([c for c in self.api.calls if c[0] == '/api/mail/send']), 1)
         self.assertEqual(self.state()['remaining_actions'], 39)
+
+    def test_shared_mailbox_send_and_reply_scope_survive_restart(self):
+        action = {'id': 'inquiry-1', 'type': 'inquiry', 'run_id': 'run-1', 'request_revision': 1,
+                  'vendor_id': 'vendor-1', 'message': 'Please quote the requested material package.'}
+        def runner(snapshot, directory):
+            self.turns.append(deepcopy(snapshot))
+            with store.transaction(snapshot['task_id']) as (state, persist):
+                execute('send', deepcopy(action), state, persist, self.api)
+            return 'session-1', 'Inquiry sent; awaiting supplier evidence.'
+        with patch.dict(os.environ, {'TAKEOFF_AMBIGUOUS_MAILBOX_ID': 'builders-mailbox'}):
+            Procurement(self.api, AGENT, runner).poll()
+        self.assertEqual(self.state()['mailbox_id'], 'builders-mailbox')
+        # Delivery rewrites RFC IDs and list rows may omit mailbox_id. The exact
+        # echoed action/run still correlates through the scoped inbox endpoint.
+        self.api.mail = [self.mail(mailbox_id=None, message_id='<rewritten@ses.example.test>')]
+        with patch.dict(os.environ, {'TAKEOFF_AMBIGUOUS_MAILBOX_ID': 'other-mailbox'}):
+            Procurement(self.api, AGENT, runner).poll()
+        self.assertEqual(len(self.turns), 2)
+        self.assertIn('reply-1', self.state()['evidence'])
+        inbox_calls = [c for c in self.api.calls if c[0] == '/api/mail/inbox']
+        self.assertEqual([c[3]['mailbox_id'] for c in inbox_calls], ['builders-mailbox'] * 2)
+        sends = [c for c in self.api.calls if c[0] == '/api/mail/send']
+        self.assertEqual(len(sends), 1)
+        self.assertEqual(sends[0][3], {'mailbox_id': 'builders-mailbox'})
+
+    def test_legacy_run_keeps_personal_inbox_after_shared_mailbox_is_enabled(self):
+        with store.transaction('task-1') as (state, persist):
+            self.listener.initialize(self.task, state, self.config)
+            state.pop('mailbox_id')  # Existing journals predate mailbox binding.
+            persist()
+        with patch.dict(os.environ, {'TAKEOFF_AMBIGUOUS_MAILBOX_ID': 'builders-mailbox'}):
+            Procurement(self.api, AGENT, self.runner).poll()
+        self.assertNotIn('mailbox_id', self.state())
+        inbox_calls = [c for c in self.api.calls if c[0] == '/api/mail/inbox']
+        self.assertEqual(len(inbox_calls), 1)
+        self.assertNotIn('mailbox_id', inbox_calls[0][3])
+
+    def test_shared_inbox_scope_is_retained_through_pagination(self):
+        with patch.object(self.api, 'call', side_effect=[
+                {'data': [{'id': 'first'}], 'has_more': True, 'next_cursor': 'next-page'},
+                {'data': [{'id': 'second'}], 'has_more': False}]) as call:
+            self.assertEqual(self.listener.inbox('builders-mailbox'), [{'id': 'first'}, {'id': 'second'}])
+        self.assertEqual([c.kwargs['mailbox_id'] for c in call.call_args_list], ['builders-mailbox'] * 2)
+        self.assertEqual(call.call_args_list[1].kwargs['cursor'], 'next-page')
 
     def test_catalog_progress_continues_same_session_then_waits_for_inquiry(self):
         action = {'id': 'inquiry-1', 'type': 'inquiry', 'run_id': 'run-1', 'request_revision': 1,
@@ -362,8 +409,23 @@ class ProcurementTests(unittest.TestCase):
         for auth in ({}, {'verdict': 'unaligned'}, {'verdict': 'failed'}, {'verdict': 'unknown'}):
             with self.subTest(auth=auth):
                 state = self.initialized()
-                self.listener.ingest(state, [], [self.mail(inbound_auth=auth)])
+                self.api.mail = [self.mail(inbound_auth=auth)]
+                self.listener.ingest(state, [], self.api.mail)
                 self.assertNotIn('reply-1', state['evidence'])
+
+    def test_missing_list_authentication_uses_verified_message_detail(self):
+        self.api.mail = [self.mail()]
+        state = self.initialized()
+        row = self.mail(inbound_auth=None)
+        self.assertTrue(self.listener.ingest(state, [], [row]))
+        self.assertEqual(state['evidence']['reply-1']['inbound_auth'], {'verdict': 'aligned'})
+        self.assertEqual([c[0] for c in self.api.calls], ['/api/mail/reply-1'])
+
+    def test_message_detail_cannot_change_to_an_unrecognized_supplier(self):
+        self.api.mail = [self.mail(**{'from': {'email': 'unrecognized@example.test'}})]
+        state = self.initialized()
+        self.assertFalse(self.listener.ingest(state, [], [self.mail(inbound_auth=None)]))
+        self.assertNotIn('reply-1', state['evidence'])
 
     def test_supplier_and_exact_run_and_known_request_are_required(self):
         cases = [self.mail(**{'from': {'email': 'attacker@example.test'}}),

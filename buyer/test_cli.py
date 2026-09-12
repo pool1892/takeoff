@@ -52,6 +52,9 @@ class CLITests(unittest.TestCase):
     def setUp(self):
         self.state = run_state()
         self.snapshots = []
+        environment = patch.dict(cli.os.environ, {'TAKEOFF_SUPPLIER_MAIL_MESSAGE_FIRST': ''})
+        environment.start()
+        self.addCleanup(environment.stop)
 
     def persist(self):
         self.snapshots.append(deepcopy(self.state))
@@ -101,10 +104,55 @@ class CLITests(unittest.TestCase):
         self.assertEqual(self.state["remaining_actions"], 4)
         self.assertEqual(api.posts[0][2]["idempotency_key"], "takeoff-task-1-ask-1")
         # The live service requires the Markdown authoring field for delivery.
-        envelope = json.loads(api.posts[0][2]["body_markdown"])
+        mail_body = api.posts[0][2]["body_markdown"]
+        envelope = json.loads(mail_body)  # Default retains strict supplier protocol.
         self.assertEqual(envelope['message'], inquiry()['message'])
         self.assertEqual(envelope['run_id'], 'run-1')
         self.assertNotIn('body_text', api.posts[0][2])
+        self.assertEqual(api.posts[0][3], {})
+
+    def test_message_first_mail_requires_explicit_partner_compatibility_flag(self):
+        api = FakeAPI(failure=TimeoutError('response lost'))
+        with patch.dict(cli.os.environ, {'TAKEOFF_SUPPLIER_MAIL_MESSAGE_FIRST': '1'}):
+            with self.assertRaises(TimeoutError):
+                cli.execute('send', inquiry(), self.state, self.persist, api)
+        body = api.posts[0][2]['body_markdown']
+        self.assertTrue(body.startswith(inquiry()['message'] + '\n\n---\n\n```json\n'))
+        envelope, = cli.json_objects(body)
+        self.assertEqual(envelope, {'schema_version': 'takeoff.supplier.v1', 'type': 'inquiry',
+            'run_id': 'run-1', 'vendor_id': 'general', 'message': inquiry()['message'], 'request_id': 'ask-1'})
+        retry = FakeAPI()
+        cli.execute('send', inquiry(), self.state, self.persist, retry)
+        self.assertEqual(retry.posts[0][2], api.posts[0][2])
+
+    def test_shared_send_persists_sender_context_and_reuses_it_after_uncertainty(self):
+        self.state['mailbox_id'] = 'builders-mailbox'
+        api = FakeAPI(failure=TimeoutError('response lost'))
+        with self.assertRaises(TimeoutError):
+            cli.execute('send', inquiry(), self.state, self.persist, api)
+        saved = deepcopy(self.snapshots[-1])
+        self.assertEqual(saved['actions']['ask-1']['mailbox_id'], 'builders-mailbox')
+        self.assertEqual(api.posts[0][3], {'mailbox_id': 'builders-mailbox'})
+        self.assertNotIn('from_email', api.posts[0][2])
+        self.state = saved
+        retry = FakeAPI()
+        cli.execute('send', inquiry(), self.state, self.persist, retry)
+        self.assertEqual(retry.posts[0][2:], api.posts[0][2:])
+        cli.execute('send', inquiry(), self.state, self.persist, retry)
+        self.assertEqual(len(retry.posts), 1)
+        self.assertEqual(self.state['remaining_actions'], 4)
+
+    def test_uncertain_send_cannot_move_to_another_mailbox(self):
+        api = FakeAPI(failure=TimeoutError('response lost'))
+        with self.assertRaises(TimeoutError):
+            cli.execute('send', inquiry(), self.state, self.persist, api)
+        # Legacy uncertain sends had no mailbox key and must retain personal mail.
+        self.state['actions']['ask-1'].pop('mailbox_id')
+        self.state['mailbox_id'] = 'builders-mailbox'
+        retry = FakeAPI()
+        with self.assertRaisesRegex(ValueError, 'original mailbox'):
+            cli.execute('send', inquiry(), self.state, self.persist, retry)
+        self.assertEqual(retry.posts, [])
 
     def test_snapshot_opening_comparison_is_compact_and_does_not_select(self):
         self.state['opening_comparison'] = [{
