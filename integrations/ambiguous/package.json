@@ -1,0 +1,12 @@
+{
+  "name": "takeoff-ambiguous",
+  "private": true,
+  "type": "module",
+  "description": "Pinned Ambiguous CLI for the isolated Takeoff buyer runtime",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "ambiguous": "0.9.0"
+  }
+}

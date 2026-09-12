@@ -1,0 +1,478 @@
+{
+  "schema_version": "0.1-proposed",
+  "status": "proposed_fixture_not_a_team_scenario_or_live_run",
+  "run_id": "demo-interior-001",
+  "task_id": "fixture-task-001",
+  "request_id": "request-001",
+  "request_source": {
+    "file": "material-request.json",
+    "request_revision": 1
+  },
+  "scope": {
+    "requirement_ids": [
+      "req-01"
+    ],
+    "meaning": "First-slice test only; the other seven requested items are not fulfilled by this example.",
+    "slice_id": "slice-01"
+  },
+  "related_issues": [
+    1,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    14,
+    17,
+    19,
+    20,
+    21,
+    22,
+    24,
+    26
+  ],
+  "fixture_rules": [
+    "Every business, product, quote, timestamp, message and contractor answer in this file is invented test data.",
+    "Quoted USD prices explicitly include all fixture taxes. These are not real tax rates or current market prices.",
+    "No public endpoint or supplier-private state is supplied. Actual channels and identities must come from Tapan.",
+    "Expected results are assertions for these inputs, not runtime rules selecting a preferred supplier.",
+    "All expected cases are evaluated at evaluated_at, before quote expiry; expired quotes must be reconfirmed before a later recommendation.",
+    "minimum_order_quantity 0 means an explicitly confirmed absence of a minimum; null or an omitted term means unknown. Empty bundle_conditions means explicitly confirmed no bundle condition.",
+    "Candidate eligibility describes product matching only; offer feasibility also requires confirmed charges, stock, validity and the approved delivery deadline.",
+    "Opening offers retain their quoted request_revision when revalidated against revision 2; only the req-01 deadline changes, and their original expiry remains binding."
+  ],
+  "sources": [
+    {
+      "source_id": "catalog-a",
+      "kind": "fixture",
+      "uri": "fixture://catalog-a",
+      "text": "Fixture product A: interior water-based wall paint, untinted white, eggshell, sealed 1 US gallon can."
+    },
+    {
+      "source_id": "catalog-b",
+      "kind": "fixture",
+      "uri": "fixture://catalog-b",
+      "text": "Fixture product B: interior water-based wall paint, untinted white, eggshell, sealed 1 US gallon can."
+    },
+    {
+      "source_id": "a-quote-1",
+      "kind": "fixture",
+      "uri": "fixture://a-quote-1",
+      "text": "Six cans at $42 each, all taxes included. Delivery is $18 total, taxes included. Six cans in stock. Delivery by September 18, 2026 at 5pm Pacific. This quote is valid through September 16 at 5pm Pacific. No minimum, bundle condition or other fee."
+    },
+    {
+      "source_id": "b-partial",
+      "kind": "fixture",
+      "uri": "fixture://b-partial",
+      "text": "We can do $39 a can for six. We need to check delivery."
+    },
+    {
+      "source_id": "b-quote-1",
+      "kind": "fixture",
+      "uri": "fixture://b-quote-1",
+      "text": "Confirmed: six 1 US gallon cans at $39 each, all taxes included, delivered free. Six in stock; earliest delivery is September 21, 2026 at 5pm Pacific. Valid through September 16 at 5pm Pacific. No minimum, bundle condition or other fee."
+    },
+    {
+      "source_id": "buyer-counter",
+      "kind": "fixture",
+      "uri": "fixture://buyer-counter",
+      "text": "The contractor has approved September 21 delivery for these six cans. Would you quote $37 per can with the same included taxes and free delivery? This is a quote inquiry and does not place an order."
+    },
+    {
+      "source_id": "b-quote-2",
+      "kind": "fixture",
+      "uri": "fixture://b-quote-2",
+      "text": "Confirmed revised quote: six cans at $37 each including all taxes, delivery free by September 21 at 5pm Pacific. Same stock and other terms; valid through September 16 at 5pm Pacific. No order has been placed."
+    }
+  ],
+  "candidates": [
+    {
+      "candidate_id": "candidate-a",
+      "supplier_id": "fixture-supplier-a",
+      "product_id": "fixture-paint-a",
+      "requirement_id": "req-01",
+      "classification": "eligible",
+      "unit": "can",
+      "package": {
+        "volume": 1,
+        "volume_unit": "US_gallon"
+      },
+      "source_ids": [
+        "catalog-a"
+      ]
+    },
+    {
+      "candidate_id": "candidate-b",
+      "supplier_id": "fixture-supplier-b",
+      "product_id": "fixture-paint-b",
+      "requirement_id": "req-01",
+      "classification": "eligible",
+      "unit": "can",
+      "package": {
+        "volume": 1,
+        "volume_unit": "US_gallon"
+      },
+      "source_ids": [
+        "catalog-b"
+      ]
+    }
+  ],
+  "inquiries": [
+    {
+      "inquiry_id": "inquiry-a",
+      "supplier_id": "fixture-supplier-a",
+      "candidate_id": "candidate-a",
+      "request_revision": 1,
+      "quantity": 6,
+      "unit": "can",
+      "needed_by": "2026-09-18T17:00:00-07:00",
+      "scope": "quote_only_no_order"
+    },
+    {
+      "inquiry_id": "inquiry-b",
+      "supplier_id": "fixture-supplier-b",
+      "candidate_id": "candidate-b",
+      "request_revision": 1,
+      "quantity": 6,
+      "unit": "can",
+      "needed_by": "2026-09-18T17:00:00-07:00",
+      "scope": "quote_only_no_order"
+    }
+  ],
+  "partial_offer": {
+    "offer_id": "offer-b",
+    "offer_revision": 0,
+    "inquiry_id": "inquiry-b",
+    "status": "unconfirmed",
+    "quantity": 6,
+    "unit": "can",
+    "currency": "USD",
+    "unit_price": "39.00",
+    "tax_treatment": null,
+    "delivery_fee": null,
+    "delivery_by": null,
+    "available_quantity": null,
+    "expires_at": null,
+    "source_ids": [
+      "b-partial"
+    ],
+    "comparison_eligible": false
+  },
+  "offers": [
+    {
+      "offer_id": "offer-a",
+      "offer_revision": 1,
+      "supplier_id": "fixture-supplier-a",
+      "candidate_id": "candidate-a",
+      "inquiry_id": "inquiry-a",
+      "request_revision": 1,
+      "status": "confirmed",
+      "currency": "USD",
+      "quantity": 6,
+      "unit": "can",
+      "available_quantity": 6,
+      "unit_price": "42.00",
+      "tax_treatment": "all_fixture_taxes_included",
+      "delivery_fee": "18.00",
+      "other_fees": "0.00",
+      "minimum_order_quantity": 0,
+      "bundle_conditions": [],
+      "delivery_by": "2026-09-18T17:00:00-07:00",
+      "expires_at": "2026-09-16T17:00:00-07:00",
+      "total_payable": "270.00",
+      "source_ids": [
+        "a-quote-1"
+      ]
+    },
+    {
+      "offer_id": "offer-b",
+      "offer_revision": 1,
+      "supplier_id": "fixture-supplier-b",
+      "candidate_id": "candidate-b",
+      "inquiry_id": "inquiry-b",
+      "request_revision": 1,
+      "status": "confirmed",
+      "currency": "USD",
+      "quantity": 6,
+      "unit": "can",
+      "available_quantity": 6,
+      "unit_price": "39.00",
+      "tax_treatment": "all_fixture_taxes_included",
+      "delivery_fee": "0.00",
+      "other_fees": "0.00",
+      "minimum_order_quantity": 0,
+      "bundle_conditions": [],
+      "delivery_by": "2026-09-21T17:00:00-07:00",
+      "expires_at": "2026-09-16T17:00:00-07:00",
+      "total_payable": "234.00",
+      "source_ids": [
+        "b-quote-1"
+      ]
+    },
+    {
+      "offer_id": "offer-b",
+      "offer_revision": 2,
+      "supplier_id": "fixture-supplier-b",
+      "candidate_id": "candidate-b",
+      "inquiry_id": "inquiry-b",
+      "request_revision": 2,
+      "status": "confirmed",
+      "currency": "USD",
+      "quantity": 6,
+      "unit": "can",
+      "available_quantity": 6,
+      "unit_price": "37.00",
+      "tax_treatment": "all_fixture_taxes_included",
+      "delivery_fee": "0.00",
+      "other_fees": "0.00",
+      "minimum_order_quantity": 0,
+      "bundle_conditions": [],
+      "delivery_by": "2026-09-21T17:00:00-07:00",
+      "expires_at": "2026-09-16T17:00:00-07:00",
+      "total_payable": "222.00",
+      "source_ids": [
+        "b-quote-2"
+      ]
+    }
+  ],
+  "decision": {
+    "decision_id": "decision-delivery-1",
+    "status": "pending_in_base_case",
+    "request_revision": 1,
+    "affected_requirement_ids": [
+      "req-01"
+    ],
+    "offer_refs": [
+      {
+        "offer_id": "offer-a",
+        "offer_revision": 1
+      },
+      {
+        "offer_id": "offer-b",
+        "offer_revision": 1
+      }
+    ],
+    "question": "May these six paint cans arrive September 21 instead of September 18? The confirmed opening offer is $234 delivered, compared with $270 for September 18 delivery. No other item or requirement changes.",
+    "allowed_answers": [
+      "approve",
+      "reject"
+    ],
+    "authorized_responder": "fixture-contractor",
+    "proposed_change": {
+      "field": "requirement_delivery_overrides.req-01.needed_by",
+      "from": "2026-09-18T17:00:00-07:00",
+      "to": "2026-09-21T17:00:00-07:00",
+      "inherited_from": "delivery.needed_by"
+    },
+    "on_approve": {
+      "new_request_revision": 2,
+      "scope": "Only req-01 quantity 6; budget, product specs and all other delivery deadlines unchanged.",
+      "requirement_delivery_overrides": {
+        "req-01": {
+          "needed_by": "2026-09-21T17:00:00-07:00"
+        }
+      }
+    },
+    "on_reject": "Keep request revision 1 and its deadline.",
+    "on_silence": "Keep revision 1; continue other independent work. No deadline change.",
+    "on_changed_offer": "Revalidate the displayed terms and consequences before applying the answer; never approve an unrelated/new tradeoff."
+  },
+  "ordered_events": [
+    {
+      "event_id": "e1",
+      "type": "request_received",
+      "request_revision": 1
+    },
+    {
+      "event_id": "e2",
+      "type": "candidate_discovered",
+      "candidate_id": "candidate-a"
+    },
+    {
+      "event_id": "e3",
+      "type": "candidate_discovered",
+      "candidate_id": "candidate-b"
+    },
+    {
+      "event_id": "e4",
+      "type": "quote_confirmed",
+      "offer_id": "offer-a",
+      "offer_revision": 1,
+      "source_id": "a-quote-1"
+    },
+    {
+      "event_id": "e5",
+      "type": "quote_incomplete",
+      "offer_id": "offer-b",
+      "offer_revision": 0,
+      "source_id": "b-partial"
+    },
+    {
+      "event_id": "e6",
+      "type": "quote_clarified",
+      "offer_id": "offer-b",
+      "offer_revision": 1,
+      "source_id": "b-quote-1"
+    },
+    {
+      "event_id": "e7",
+      "type": "decision_requested",
+      "decision_id": "decision-delivery-1"
+    },
+    {
+      "event_id": "e8-approve",
+      "branch": "approve",
+      "type": "contractor_answer",
+      "decision_id": "decision-delivery-1",
+      "answer": "approve",
+      "actor_id": "fixture-contractor",
+      "request_revision": 1,
+      "new_request_revision": 2
+    },
+    {
+      "event_id": "e9-approve",
+      "branch": "approve",
+      "type": "counteroffer_proposed",
+      "offer_id": "offer-b",
+      "proposed_unit_price": "37.00",
+      "source_id": "buyer-counter"
+    },
+    {
+      "event_id": "e10-approve",
+      "branch": "approve",
+      "type": "quote_confirmed",
+      "offer_id": "offer-b",
+      "offer_revision": 2,
+      "source_id": "b-quote-2"
+    },
+    {
+      "event_id": "e8-reject",
+      "branch": "reject",
+      "type": "contractor_answer",
+      "decision_id": "decision-delivery-1",
+      "answer": "reject",
+      "actor_id": "fixture-contractor",
+      "request_revision": 1
+    }
+  ],
+  "expected_cases": [
+    {
+      "case_id": "original_deadline",
+      "request_revision": 1,
+      "available_offer_refs": [
+        "offer-a@1",
+        "offer-b@1"
+      ],
+      "selected_offer_ref": "offer-a@1",
+      "total_payable": "270.00",
+      "currency": "USD",
+      "rejection_reasons": {
+        "offer-b@1": "Delivery misses the unmodified deadline."
+      }
+    },
+    {
+      "case_id": "approved_later_deadline_opening_benchmark",
+      "request_revision": 2,
+      "available_offer_refs": [
+        "offer-a@1",
+        "offer-b@1"
+      ],
+      "selected_offer_ref": "offer-b@1",
+      "total_payable": "234.00",
+      "currency": "USD",
+      "approval_ref": "e8-approve"
+    },
+    {
+      "case_id": "approved_later_deadline_after_negotiation",
+      "request_revision": 2,
+      "available_offer_refs": [
+        "offer-a@1",
+        "offer-b@2"
+      ],
+      "selected_offer_ref": "offer-b@2",
+      "total_payable": "222.00",
+      "currency": "USD",
+      "approval_ref": "e8-approve",
+      "same_requirements_negotiation_savings": "12.00",
+      "requirement_change_cost_difference": "36.00",
+      "total_difference_from_original_deadline": "48.00",
+      "evidence_refs": [
+        "catalog-b",
+        "b-quote-1",
+        "buyer-counter",
+        "b-quote-2",
+        "e8-approve"
+      ],
+      "negotiation_baseline_case_id": "approved_later_deadline_opening_benchmark",
+      "original_deadline_baseline_case_id": "original_deadline"
+    },
+    {
+      "case_id": "rejected_or_unanswered_delay",
+      "request_revision": 1,
+      "available_offer_refs": [
+        "offer-a@1",
+        "offer-b@1"
+      ],
+      "selected_offer_ref": "offer-a@1",
+      "total_payable": "270.00",
+      "currency": "USD",
+      "unauthorized_changes": []
+    },
+    {
+      "case_id": "partial_quote_only",
+      "request_revision": 1,
+      "available_offer_refs": [
+        "offer-b@0"
+      ],
+      "selected_offer_ref": null,
+      "total_payable": null,
+      "status": "no_confirmed_feasible_offer"
+    },
+    {
+      "case_id": "full_request_against_this_first_slice",
+      "status": "incomplete",
+      "covered_requirement_ids": [
+        "req-01"
+      ],
+      "uncovered_requirement_ids": [
+        "req-02",
+        "req-03",
+        "req-04",
+        "req-05",
+        "req-06",
+        "req-07",
+        "req-08"
+      ],
+      "full_package_total": null
+    }
+  ],
+  "recommendation_shape": {
+    "run_id": "demo-interior-001",
+    "task_id": "fixture-task-001",
+    "request_revision": 2,
+    "scope_requirement_ids": [
+      "req-01"
+    ],
+    "status": "first_slice_valid_full_request_incomplete",
+    "selected_offer_refs": [
+      "offer-b@2"
+    ],
+    "quantity": 6,
+    "unit": "can",
+    "currency": "USD",
+    "total_payable": "222.00",
+    "delivery_by": "2026-09-21T17:00:00-07:00",
+    "approval_refs": [
+      "decision-delivery-1",
+      "e8-approve"
+    ],
+    "source_refs": [
+      "catalog-b",
+      "b-quote-2"
+    ],
+    "explanation": "For the six-can slice, the approved September 21 deadline allows supplier B. Its confirmed $37/can price totals $222 delivered. $12 is improvement against the $234 opening package under the same approved deadline; $36 comes from allowing the later deadline. The remaining seven materials still need offers.",
+    "order_status": "not_placed"
+  },
+  "evaluated_at": "2026-09-12T12:00:00-07:00"
+}

@@ -6,8 +6,9 @@ A general contractor gives Takeoff a procurement task. It finds suitable product
 gathers offers, negotiates within a bounded scenario, asks about consequential
 tradeoffs, and returns a recommendation the contractor can inspect.
 
-This is our September 12, 2026 hackathon project. The current repository contains
-the shared project setup; product implementation follows the GitHub plan.
+This is our September 12, 2026 hackathon project. The repository contains the shared
+plan and the isolated Hermes buyer runtime with a working Ambiguous chat connection.
+The complete procurement journey is being built through the GitHub issues.
 
 ## Start here
 
@@ -24,6 +25,11 @@ the shared project setup; product implementation follows the GitHub plan.
 GitHub Issues and the linked Project are the shared tracker. Tapan and Ehsan own
 their implementation choices within the agreed interfaces. This is a fresh team
 plan; older brainstorms and module decompositions are not requirements.
+
+The buyer implementation agent can be reached at **christoph-6932@agentmail.to**
+for coordination with the supplier implementation agent. See
+[current handoffs](docs/coordination.md). This mailbox belongs to the coding
+workflow; Chip uses Ambiguous for contractor and procurement communication.
 
 ## How it works
 
@@ -94,14 +100,32 @@ relevant skill. Start a fresh session after cloning or changing discovery setup.
 
 ## Local setup
 
-Clone this repository normally; preserve its relative symlinks. Use an isolated
-Takeoff Hermes home and the new workspace references being provisioned by the
-team. `.env.example` describes local configuration hygiene; exact adapter
-variables and run commands will be documented when those integrations exist.
+Clone this repository normally; preserve its relative symlinks. Run Hermes only
+through `scripts/hermes`, which confines the full agent to a non-root Docker
+container with this repo mounted. Its credentials, memories, and sessions live
+in ignored `.local/hermes/` state. Docker's image cache remains managed by Docker.
+
+```bash
+scripts/hermes init
+scripts/hermes pull
+scripts/hermes credentials
+scripts/hermes smoke
+scripts/hermes chat
+scripts/hermes bridge-start
+scripts/hermes bridge-status
+```
+
+See [Hermes setup and isolation](docs/hermes.md) and
+[Ambiguous integration](docs/ambiguous.md). The buyer workspace reference is
+`takeoffAI`; verify its exact identity using the new buyer agent's token. Use a
+dedicated OpenAI API key. `.env.example` contains variable names only. **Chip** is
+the contractor's personal Takeoff agent in Ambiguous; its DM listener uses Sol
+with high reasoning and Fast processing. Stop it with `scripts/hermes bridge-stop`.
 
 Keep local environments, credentials, runtime state, and raw captures out of Git.
 Commit shared code, instructions, intentionally sanitized fixtures, and concise
-run instructions. There are no product install or run commands to claim yet.
+run instructions. Runtime setup does not establish that the complete procurement
+journey or the remote supplier integration is implemented.
 
 ## Deterministic procurement demo state
 
