@@ -1,82 +1,48 @@
-import { contractorDecision, createDemoProcurement } from "./demoScenario.js";
+import { createProcurementAdapter } from "./state/procurementAdapter.js";
 import "./styles.css";
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const stages = ["Request", "Brief", "Discover", "Compare", "Negotiate", "Decision", "Recommend"];
 const app = document.querySelector("#app");
-let role = "contractor";
-let active = "Decision";
-let decision;
+const adapter = createProcurementAdapter();
+let state = adapter.getSnapshot();
 let detailOpen = false;
 
-const icon = (name) => ({
-  home: "⌂", brief: "▤", sources: "◌", quotes: "↔", negotiate: "⇄", decision: "◇", plan: "✓", vendors: "◫", settings: "⚙",
-}[name] || "•");
+const phaseIndex = (status) => ({ draft: 0, briefing: 1, sourcing: 2, quoting: 3, negotiating: 4, needs_contractor_decision: 5, needs_decision: 5, recommended: 6, plan_ready: 6 })[status] ?? 0;
+const statusTag = (status = "proposed") => `<span class="tag ${status === "confirmed" ? "good" : status === "proposed" ? "warn" : "muted"}"><i></i>${status}</span>`;
+const modeLabel = () => state.mode === "demo" ? "SIMULATED DEMO" : state.connection === "live" ? "LIVE PROCUREMENT" : `LIVE · ${state.connection.toUpperCase()}`;
 
-function statusTag(status) {
-  const cls = status === "confirmed" ? "good" : status === "proposed" ? "warn" : "muted";
-  return `<span class="tag ${cls}"><i></i>${status}</span>`;
+function render() {
+  const index = phaseIndex(state.status);
+  const decision = state.decision;
+  const recommendation = state.recommendation;
+  const quotes = state.quotes.length ? state.quotes : state.suppliers;
+  app.innerHTML = `<div class="app-shell"><aside class="sidebar">
+    <div class="brand"><span class="mark">▲</span><span>TAKEOFF</span></div>
+    <div class="workspace"><span class="avatar">AC</span><span><b>Alder Carter</b><small>General contractor</small></span></div>
+    <nav>${["Overview", "Procurement brief", "Supplier activity", "Quotes & evidence", "Negotiation", "Approvals", "Buying plan"].map((label) => `<button class="nav-item ${label === "Overview" ? "active" : ""}"><span>◌</span>${label}</button>`).join("")}</nav>
+    <div class="sidebar-bottom"><div class="mode-label ${state.connection}"><span class="pulse"></span>${modeLabel()}</div><button class="help" id="reconnect">↻ Reconnect</button></div>
+  </aside><main><header><div><p class="eyebrow">${state.mode === "demo" ? "SIMULATED BUYER-SAFE FIXTURE" : "BUYER WORKSPACE · LIVE API"}</p><h1>${state.title}</h1></div><div class="header-actions"><button class="quiet" id="recordApproval">✓ Record approval</button><button class="quiet" id="viewEvidence">⌘ Evidence</button><button class="profile">AC</button></div></header>
+  ${state.error ? `<div class="connection-notice ${state.connection}"><b>${state.connection === "reconnecting" ? "Reconnecting" : "Connection needs attention"}</b><span>${state.error}</span></div>` : ""}
+  <section class="stagebar"><div class="stage-track">${stages.map((stage, i) => `<span class="stage ${i <= index ? "done" : ""} ${i === index ? "current" : ""}"><span>${i < index ? "✓" : i + 1}</span>${stage}</span>`).join("")}</div><div class="agent-state"><span class="agent-dot"></span><b>${recommendation ? "Plan ready" : state.connection === "live" ? "Buyer connected" : "Awaiting procurement"}</b><small>Hermes buyer</small></div></section>
+  <section class="hero-grid"><div class="card decision-card">${hero(decision, recommendation, state.status)}</div><div class="side-stack">
+    <div class="card brief-card">${brief()}</div>
+    <div class="card activity-card"><div class="card-top"><div><p class="eyebrow">${state.mode === "demo" ? "DEMO ACTIVITY" : "LIVE ACTIVITY"}</p><h3>Supplier work</h3></div></div>${state.activity.slice(-4).reverse().map(activity).join("") || "<p class='lead'>Start procurement to receive buyer activity.</p>"}</div>
+  </div></section>
+  <section class="card quotes-card"><div class="card-top"><div><p class="eyebrow">NORMALIZED QUOTES</p><h3>Every supplier, on the same terms</h3></div></div>${quoteTable(quotes)}</section>${detailOpen ? evidence(quotes) : ""}</main></div>`;
+  bind();
 }
-
-function renderShell(content) {
-  const nav = role === "contractor"
-    ? [["home", "Overview"], ["brief", "Procurement brief"], ["sources", "Supplier activity"], ["quotes", "Quotes & evidence"], ["negotiate", "Negotiation"], ["decision", "Approvals"], ["plan", "Buying plan"]]
-    : [["home", "Opportunity inbox"], ["quotes", "Active deals"], ["sources", "Catalog & inventory"], ["negotiate", "Agent strategy"], ["decision", "Human approvals"], ["plan", "Offer history"]];
-  app.innerHTML = `<div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand"><span class="mark">▲</span><span>TAKEOFF</span></div>
-      <div class="workspace"><span class="avatar">${role === "contractor" ? "AC" : "CS"}</span><span><b>${role === "contractor" ? "Alder Carter" : "Cascade Supply"}</b><small>${role === "contractor" ? "General contractor" : "Supplier workspace"}</small></span><button class="switch-role" title="Switch workspace">⇄</button></div>
-      <nav>${nav.map(([key, label]) => `<button class="nav-item ${label.includes(active) || (active === "Decision" && label === "Approvals") ? "active" : ""}" data-nav="${label}"><span>${icon(key)}</span>${label}</button>`).join("")}</nav>
-      <div class="sidebar-bottom"><div class="mode-label"><span class="pulse"></span>SIMULATED DEMO</div><button class="help">? Help center</button></div>
-    </aside>
-    <main><header><div><p class="eyebrow">${role === "contractor" ? "RIVERSIDE APARTMENTS · SEATTLE, WA" : "PRIVATE SUPPLIER CONSOLE · SEATTLE, WA"}</p><h1>${role === "contractor" ? "Framing procurement" : "Framing opportunity"}</h1></div><div class="header-actions"><button class="quiet" id="viewEvidence">⌘ Evidence</button><button class="profile">${role === "contractor" ? "AC" : "CS"}</button></div></header>${content}</main>
-  </div>`;
-  bindShell();
+function hero(decision, recommendation, status) {
+  if (recommendation) return `<div class="card-kicker"><span class="agent-badge">✦</span> TAKEOFF RECOMMENDATION ${statusTag("confirmed")}</div><h2>${recommendation.supplier || "Recommended package"} is ready for review.</h2><div class="recommendation"><div class="recommendation-total"><span>Recommended total</span><strong>${recommendation.total ? money.format(recommendation.total) : "See terms"}</strong><small>${recommendation.deliveryDays ? `${recommendation.deliveryDays}-day confirmed delivery` : "Inspect the supporting terms"}</small></div><div class="recommendation-reasons">${(recommendation.rationale || []).map((reason) => `<p><span>✓</span>${reason}</p>`).join("")}</div></div>`;
+  if (decision?.question) return `<div class="card-kicker"><span class="agent-badge">✦</span> TAKEOFF NEEDS A DECISION ${statusTag("proposed")}</div><h2>${decision.question}</h2><p class="lead">${decision.whyItMatters || "Your answer will be recorded and sent to the buyer."}</p><div class="option-list">${(decision.options || []).map((option) => `<button class="decision-option" data-decision="${option.id}"><span class="radio"></span><span><b>${option.label}</b><small>${option.deliveryImpact || "Recorded with this procurement"}</small></span><strong>${option.priceImpact || ""}</strong><span class="arrow">→</span></button>`).join("")}</div>`;
+  if (status === "briefing") return `<div class="card-kicker"><span class="agent-badge">✦</span> DEMO BRIEF READY</div><h2>Confirm the priorities to continue.</h2><p class="lead">The simulated buyer will reveal supplier discovery, quoted terms, and the delivery tradeoff after you confirm the priority brief.</p><button class="primary" id="confirmPrioritiesHero">Confirm priorities</button>`;
+  return `<div class="card-kicker"><span class="agent-badge">✦</span> READY TO START</div><h2>Start this procurement run.</h2><p class="lead">Takeoff will structure the brief, discover suppliers, request quotes, negotiate within authority, and return any consequential decision here.</p><button class="primary" id="startProcurement">Start procurement</button>`;
 }
-
-function contractorView() {
-  const task = createDemoProcurement(decision);
-  const selected = task.recommendation;
-  const stageIndex = selected ? 6 : 5;
-  renderShell(`<section class="stagebar"><div class="stage-track">${stages.map((stage, index) => `<button class="stage ${index <= stageIndex ? "done" : ""} ${stage === active ? "current" : ""}" data-stage="${stage}"><span>${index < stageIndex ? "✓" : index + 1}</span>${stage}</button>`).join("")}</div><div class="agent-state"><span class="agent-dot"></span><b>${selected ? "Plan ready" : "Needs your input"}</b><small>Hermes buyer</small></div></section>
-  <section class="hero-grid">
-    <div class="card decision-card">
-      <div class="card-kicker"><span class="agent-badge">✦</span> TAKEOFF NEEDS A DECISION <span class="tag urgent"><i></i>Action required</span></div>
-      <h2>${selected ? `Your decision selected ${selected.supplier}.` : contractorDecision.question}</h2>
-      <p class="lead">${selected ? "The recommendation and draft buying plan have been recalculated using your approved delivery tradeoff." : contractorDecision.whyItMatters}</p>
-      ${selected ? recommendation(selected, task) : decisionOptions()}
-    </div>
-    <div class="side-stack">
-      <div class="card brief-card"><div class="card-top"><div><p class="eyebrow">PROCUREMENT BRIEF</p><h3>What Takeoff is optimizing</h3></div><button class="text-button">Edit brief</button></div>
-        <div class="requirement"><span>Material package</span><b>Douglas Fir 2×6 #2</b><small>4,820 linear ft · Exact match required</small></div>
-        <div class="priorities">${task.brief.priorities.map((p) => `<div><span>${p.name}</span><em>${p.weight}%</em><i><b style="width:${p.weight * 2}%"></b></i></div>`).join("")}</div>
-      </div>
-      <div class="card activity-card"><div class="card-top"><div><p class="eyebrow">LIVE ACTIVITY</p><h3>Supplier work</h3></div><button class="text-button" id="activityBtn">View all</button></div>${task.activity.slice(-3).map((event) => `<div class="event"><span class="event-dot ${event.type}"></span><div><b>${event.message}</b><small>${event.time} · ${event.type === "fact" ? "Supplier fact" : "Agent action"}</small></div></div>`).join("")}</div>
-    </div>
-  </section>
-  <section class="card quotes-card"><div class="card-top"><div><p class="eyebrow">NORMALIZED QUOTES</p><h3>Every supplier, on the same terms</h3></div><button class="text-button" id="compareBtn">Open comparison</button></div><div class="quote-table"><div class="quote-head"><span>Supplier & channel</span><span>Availability</span><span>Delivery</span><span>Total payable</span><span>Status</span></div>${task.suppliers.map((quote) => `<button class="quote-row" data-quote="${quote.supplierId}"><span><b>${quote.supplier}</b><small>${quote.channel}</small></span><span>${quote.availability}</span><span><b>${quote.deliveryDays} days</b></span><span><b>${money.format(quote.total)}</b><small>${quote.fees}</small></span><span>${statusTag(quote.status)} <b class="chevron">›</b></span></button>`).join("")}</div></section>
-  ${detailOpen ? evidencePanel(task) : ""}`);
-}
-
-function decisionOptions() { return `<div class="option-list">${contractorDecision.options.map((option) => `<button class="decision-option" data-decision="${option.id}"><span class="radio"></span><span><b>${option.label}</b><small>${option.deliveryImpact}</small></span><strong>${option.priceImpact}</strong><span class="arrow">→</span></button>`).join("")}</div><div class="decision-footer"><span>Decision applies only to this task. You can revise the brief later.</span><button class="primary" disabled>Choose an option to continue</button></div>`; }
-
-function recommendation(selected, task) { const saving = 78900 - selected.total; return `<div class="recommendation"><div class="recommendation-total"><span>Recommended total</span><strong>${money.format(selected.total)}</strong><small>${selected.deliveryDays}-day confirmed delivery · Freight included</small></div><div class="recommendation-reasons">${task.recommendation.rationale.map((r) => `<p><span>✓</span>${r}</p>`).join("")}</div><div class="decision-footer"><span class="approved">✓ Approval recorded · ${decision === "accept-five-day" ? "Five-day delivery accepted" : "Three-day delivery required"}</span><button class="primary" id="planBtn">Review draft plan ${saving > 0 ? `· Saves ${money.format(saving)}` : ""}</button></div></div>`; }
-
-function evidencePanel(task) { return `<div class="overlay" id="closeOverlay"><aside class="evidence-panel" onclick="event.stopPropagation()"><div class="card-top"><div><p class="eyebrow">EVIDENCE TRAIL</p><h3>Quote & decision record</h3></div><button class="close" id="closeEvidence">×</button></div><div class="evidence-note"><b>Simulated fixture</b><p>This is seeded demonstration data, not a live supplier run or external order.</p></div>${task.suppliers.map((quote) => `<article class="evidence-item"><div><span class="channel">${quote.channel}</span>${statusTag(quote.status)}</div><h4>${quote.supplier}</h4><p>${quote.product}</p><dl><dt>Quote evidence</dt><dd>${quote.evidence}</dd><dt>Terms</dt><dd>${quote.availability} ${quote.fees}</dd></dl></article>`).join("")}</aside></div>`; }
-
-function vendorView() { renderShell(`<section class="vendor-hero"><div><p class="eyebrow">INCOMING AGENT-TO-AGENT REQUEST</p><h2>Riverside Apartments framing package</h2><p>Takeoff is requesting a confirmed package offer for 4,820 linear ft of Douglas Fir 2×6 #2.</p></div><span class="tag good"><i></i>Buyer verified</span></section><section class="vendor-grid"><div class="card"><div class="card-top"><div><p class="eyebrow">SHARED DEAL</p><h3>Offer progression</h3></div><span class="tag good"><i></i>Negotiating</span></div><div class="offer-ladder"><div><span>Buyer request</span><b>4,820 linear ft</b><small>Delivery within 7 days</small></div><div><span>Your opening offer</span><b>$79,400</b><small>Freight not included</small></div><div class="current-offer"><span>Your counteroffer</span><b>$76,400</b><small>Freight included · 5-day delivery</small></div></div><button class="primary wide" id="acceptOffer">Confirm current offer</button></div><div class="card private-card"><p class="eyebrow">PRIVATE TO CASCADE SUPPLY</p><h3>Agent strategy & guardrails</h3><div class="private-notice">🔒 This information is never sent to the buyer workspace.</div><label>Offer authority <input type="range" min="0" max="100" value="72" /><span>Package counteroffer permitted</span></label><label>Delivery promise <select><option>5-day delivery</option><option>6-day delivery</option></select><span>Must remain confirmed before sharing</span></label><div class="strategy-check"><span>✓ Freight may be included</span><span>✓ Human takeover available</span><span>✓ Counteroffer needs audit record</span></div></div></section><section class="card shared-record"><div class="card-top"><div><p class="eyebrow">WHAT THE BUYER CAN SEE</p><h3>Shared deal record</h3></div><span class="tag muted"><i></i>Agent-to-agent</span></div><div class="shared-fields"><span>Requirement <b>Douglas Fir 2×6 #2</b></span><span>Quantity <b>4,820 linear ft</b></span><span>Current offer <b>$76,400, freight included</b></span><span>Delivery <b>5 days, confirmed</b></span></div></section></section>`); }
-
-function bindShell() {
-  document.querySelector(".switch-role")?.addEventListener("click", () => { role = role === "contractor" ? "vendor" : "contractor"; render(); });
-  document.querySelectorAll("[data-stage]").forEach((button) => button.addEventListener("click", () => { active = button.dataset.stage; render(); }));
-  document.querySelectorAll("[data-decision]").forEach((button) => button.addEventListener("click", () => { decision = button.dataset.decision; active = "Recommend"; render(); }));
-  document.querySelector("#viewEvidence")?.addEventListener("click", () => { detailOpen = true; render(); });
-  document.querySelector("#compareBtn")?.addEventListener("click", () => { detailOpen = true; render(); });
-  document.querySelectorAll("[data-quote]").forEach((button) => button.addEventListener("click", () => { detailOpen = true; render(); }));
-  document.querySelector("#closeOverlay")?.addEventListener("click", () => { detailOpen = false; render(); });
-  document.querySelector("#closeEvidence")?.addEventListener("click", () => { detailOpen = false; render(); });
-  document.querySelector("#planBtn")?.addEventListener("click", () => { detailOpen = true; render(); });
-  document.querySelector("#acceptOffer")?.addEventListener("click", (event) => { event.target.textContent = "Offer confirmed · buyer notified"; event.target.classList.add("confirmed-button"); });
-}
-function render() { role === "contractor" ? contractorView() : vendorView(); }
-render();
+function brief() { const priorities = state.brief?.priorities || []; return `<div class="card-top"><div><p class="eyebrow">PROCUREMENT BRIEF</p><h3>What Takeoff is optimizing</h3></div><button class="text-button" id="confirmPriorities">Confirm priorities</button></div><div class="requirement"><span>Material package</span><b>${state.requirements?.[0]?.specification || "Requirements loading"}</b><small>${state.requirements?.length || 0} requirements · Buyer-visible only</small></div><div class="priorities">${priorities.map((p) => `<div><span>${p.name}</span><em>${p.weight}%</em><i><b style="width:${p.weight * 2}%"></b></i></div>`).join("")}</div>`; }
+function activity(event) { return `<div class="event"><span class="event-dot ${event.type === "fact" ? "fact" : ""}"></span><div><b>${event.message}</b><small>${event.time || "now"} · ${event.type === "fact" ? "Supplier fact" : "Agent activity"}</small></div></div>`; }
+function quoteTable(quotes) { if (!quotes.length) return "<p class='lead'>No quotes have been received yet.</p>"; return `<div class="quote-table"><div class="quote-head"><span>Supplier & channel</span><span>Availability</span><span>Delivery</span><span>Total payable</span><span>Status</span></div>${quotes.map((quote) => `<button class="quote-row" data-evidence><span><b>${quote.supplier || quote.name}</b><small>${quote.channel || "Supplier channel"}</small></span><span>${quote.availability || quote.complete ? "Available" : "Terms pending"}</span><span><b>${quote.deliveryDays ? `${quote.deliveryDays} days` : "—"}</b></span><span><b>${quote.total ? money.format(quote.total) : "—"}</b><small>${quote.fees || "Confirm fees"}</small></span><span>${statusTag(quote.status || "proposed")} <b class="chevron">›</b></span></button>`).join("")}</div>`; }
+function evidence(quotes) { return `<div class="overlay" id="closeOverlay"><aside class="evidence-panel" onclick="event.stopPropagation()"><div class="card-top"><div><p class="eyebrow">EVIDENCE TRAIL</p><h3>Quote & decision record</h3></div><button class="close" id="closeEvidence">×</button></div><div class="evidence-note"><b>${state.mode === "demo" ? "Simulated fixture" : "Live buyer projection"}</b><p>${state.mode === "demo" ? "Seeded demonstration data, not a live supplier run or external order." : "Terms are received from the procurement API. This view never creates an order."}</p></div>${quotes.map((quote) => `<article class="evidence-item"><div>${statusTag(quote.status || "proposed")}</div><h4>${quote.supplier || quote.name}</h4><p>${quote.product || "Package terms"}</p><dl><dt>Evidence</dt><dd>${quote.evidence || quote.sourceRef || "Awaiting source reference"}</dd><dt>Terms</dt><dd>${quote.availability || "Availability not confirmed"} ${quote.fees || ""}</dd></dl></article>`).join("")}</aside></div>`; }
+async function perform(action) { try { await action(); } catch (error) { state = { ...state, error: error.message, connection: "error" }; render(); } }
+function bind() { document.querySelector("#startProcurement")?.addEventListener("click", () => perform(() => adapter.startProcurement({ requirements: state.requirements }))); document.querySelectorAll("#confirmPriorities, #confirmPrioritiesHero").forEach((button) => button.addEventListener("click", () => perform(() => adapter.answerPriorities({ priorities: state.brief?.priorities || [] })))); document.querySelector("#recordApproval")?.addEventListener("click", () => perform(() => adapter.submitApproval({ source: "contractor_workspace" }))); document.querySelectorAll("[data-decision]").forEach((button) => button.addEventListener("click", () => perform(() => adapter.submitNegotiationDecision(state.mode === "demo" ? button.dataset.decision : { optionId: button.dataset.decision })))); document.querySelectorAll("[data-evidence]").forEach((button) => button.addEventListener("click", () => { detailOpen = true; render(); })); document.querySelector("#viewEvidence")?.addEventListener("click", () => { detailOpen = true; render(); }); document.querySelector("#closeOverlay")?.addEventListener("click", () => { detailOpen = false; render(); }); document.querySelector("#closeEvidence")?.addEventListener("click", () => { detailOpen = false; render(); }); document.querySelector("#reconnect")?.addEventListener("click", () => adapter.connect?.()); }
+adapter.subscribe((next) => { state = next; render(); });
+adapter.connect?.();

@@ -2,7 +2,8 @@
 
 The buyer implementation agent working with Christoph is reachable at
 **christoph-6932@agentmail.to**. The agent building the supplier side should email
-this address to establish direct coordination. Include `Takeoff supplier handoff`
+this address to establish direct coordination. See [coding-agent email addresses](agentmail-addresses.md)
+for the shared team list. Include `Takeoff supplier handoff`
 in the subject and link the relevant GitHub issue or commit. GitHub Issues remain
 the shared record for agreed interfaces and decisions.
 
