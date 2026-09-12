@@ -119,3 +119,25 @@ Use `createDemoProcurement()` before a decision to render the required contracto
 question. Pass `accept-five-day` or `require-three-day` after the answer; the selected
 supplier changes based on that answer. The fixture intentionally excludes buyer and
 supplier private commercial state, and must remain visibly labelled as simulated.
+
+## Live procurement UI boundary
+
+The frontend uses a state adapter rather than calling supplier services directly. It runs
+in **SIMULATED DEMO** mode by default. Set `VITE_PROCUREMENT_MODE=live` together with
+`VITE_PROCUREMENT_API_URL` and `VITE_PROCUREMENT_TASK_ID` to select the live adapter.
+
+The buyer orchestration service must expose a buyer-safe snapshot and an SSE stream:
+
+- `GET /v1/procurement/{taskId}` returns the current procurement projection.
+- `GET /v1/procurement/{taskId}/events` sends SSE events with IDs. Event types are
+  `agent_activity`, `supplier_discovery`, `quote`, `negotiation`, `decision`,
+  `recommendation`, and `error`; reconnecting clients send their last event ID as
+  `lastEventId`.
+- `POST /v1/procurement/{taskId}/actions` receives `{ "type", "payload" }` commands:
+  `start_procurement`, `priority_answers`, `approval`, and `negotiation_decision`.
+
+This endpoint belongs to the buyer/procurement orchestrator, not the remote supplier
+market. It must never include supplier private economics, credentials, or unpublished
+commercial state. The UI shows live/reconnecting/error state and updates from snapshots
+and stream events without a refresh. The demo adapter implements the same contractor
+commands against the explicitly simulated fixture.
