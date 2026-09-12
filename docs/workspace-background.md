@@ -38,8 +38,9 @@ materials, passed inspections, or construction performed by Chip.
 
 Three actual supplier messages were forwarded to the operator's inbox. Raw
 forwarding drafts intended for the shared contractor inbox were not sent at this
-checkpoint. Human-style procurement correspondence for that inbox is being
-prepared separately as staged presentation material. Its ten-home prices,
+checkpoint. Six human-style emails were subsequently delivered to the shared
+contractor inbox and verified by readback at 22:45:12 UTC. They are separate staged
+presentation material. Their ten-home prices,
 derivation, and limits are recorded centrally in
 [demo context](demo-context.md#ten-home-presentation-correspondence).
 

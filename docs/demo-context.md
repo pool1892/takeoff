@@ -96,6 +96,9 @@ raw forwarding drafts for the shared contractor inbox were not sent at this
 checkpoint; the human-style correspondence below is a separate presentation asset.
 A live human voice conversation is verified; it contained no price offer or
 confirmed quote. See the [voice evidence](voice-handoff.md).
+Hermes posted a concrete OSB substitution question in the actual single-house task
+at **22:43:15 UTC**, followed by its linked contractor DM at **22:43:18 UTC**.
+It is awaiting the human answer; posting the question does not approve the change.
 An approved meaningful substitution, a confirmed phone quote, human comparison,
 and recorded demo playback remain separate unverified milestones. No human buying
 benchmark or human-time-saving measurement was conducted. See [the integration handoff](suppliers/integration.md)
@@ -103,9 +106,16 @@ for the current endpoint and protocol.
 
 ## Ten-home presentation correspondence
 
+The linked ten-home source document, spreadsheet, and buying-plan document are
+published and verified in Ambiguous. A short Chip/Dana quote conversation is also
+scripted presentation correspondence; Dana is a fictional supplier contact, and
+that dialogue is not an original supplier transcript.
+
+
 The user requested human-style email correspondence for the shared contractor
-inbox with larger project totals. Three staged procurement emails are being
-prepared as authored presentation props. They do not record fresh supplier
+inbox with larger project totals. **Six staged emails were delivered and all six
+were read back in the shared contractor inbox at 22:45:12 UTC.** They are authored
+presentation props, not fresh supplier
 quotes, an actual ten-home negotiation, or a completed native-agent procurement
 outcome. Sending a prop through a real email service does not change its provenance.
 
