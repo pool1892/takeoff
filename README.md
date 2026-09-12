@@ -9,9 +9,10 @@ tradeoffs, and returns a recommendation the contractor can inspect.
 This is our September 12, 2026 hackathon project. The repository contains the
 isolated Hermes buyer runtime with working Ambiguous chat, plus a resettable
 supplier market with a website and Ambiguous communication adapters. Procurement
-tools and assigned-task transport completed a live three-material recommendation.
-The full 25-material package has three supplier quotes; negotiation and the
-contractor substitution decision remain in progress through the GitHub issues.
+tools and assigned-task transport completed a live three-material recommendation,
+then an operator-assisted [full 25-material recommendation](docs/runs/2026-09-12-full-house.md)
+for **$8,200 delivered** after a confirmed **$231.73 negotiation reduction**. Three
+suppliers were compared; the meaningful contractor substitution decision remains open.
 
 ## Start here
 

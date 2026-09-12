@@ -14,9 +14,9 @@ buyer fixture; provide public endpoint/address references and shareable examples
 ## Current buyer side
 
 - Chip is Christoph's personal agent in the `takeoffAI` Ambiguous workspace.
-  Its direct chat works through isolated Hermes. Current experiments use Luna,
-  maximum reasoning, and Fast requested via OpenAI's priority tier. Explicit
-  invocation arguments also change resumed sessions from the earlier Sol model.
+  Its direct chat works through isolated Hermes. Procurement and chat currently use
+  **Sol, medium reasoning, and Fast requested via OpenAI's priority tier**. Earlier
+  Luna turns remain recorded; explicit invocation arguments apply to resumed sessions.
 - Hermes and its tools have only the repository mounted, with non-root execution,
   read-only source, writable local state, and restricted HTTPS egress. Supplier
   destinations need explicit configuration when their endpoints are known.
@@ -25,7 +25,12 @@ buyer fixture; provide public endpoint/address references and shareable examples
   action validation, scoped contractor decisions, and package evaluation. Focused
   tests pass. The first live three-line task completed at 14:35 PDT with a
   validated $2,300 delivered supplier quote and the recommendation published in
-  Ambiguous. The full 25-component package remains in progress.
+  Ambiguous. The full 25-component recommendation completed at **15:20 PDT**:
+  Neighborhood Delivery Supply confirmed the buyer's $8,200 delivered counteroffer,
+  $231.73 below its own opening quote, covering 25/25 requirements. The recommendation
+  is published in Ambiguous and the task completion is recorded. No order was placed.
+  See [the full-house run](runs/2026-09-12-full-house.md) for terms, recovery history,
+  the remaining substitution gap, and capture guidance.
 - The accepted starting flow is a concrete request, with questions only for
   missing essentials. A priority interview is not a prerequisite for discovery.
 - Product discovery and selection come before negotiation: material sheet →
@@ -55,8 +60,9 @@ requires a fresh supplier run. These are simulated businesses communicating over
 real services. `tax_treatment=all_fixture_taxes_included` explicitly means zero
 additional tax for this synthetic scenario, not a real tax rule.
 
-The first three requirements and one remote supplier are connected; next expand
-to all 25 requirements and the core website, email, and agent-to-agent channels.
+All 25 requirements were discovered against 67 catalog products, with actual
+Ambiguous email exchanges to three remote supplier workers. Website discovery and
+supplier mail are verified; this does not establish a separate direct agent-chat channel.
 The supplier agent retains its separate Ambiguous workspace and private state.
 The documented Ambiguous API has no verified general cross-workspace agent-chat
 transport yet; agree and test the exact channel rather than assuming one exists.
@@ -72,7 +78,9 @@ natural source message and mapping cases. Both implementation agents adopted its
 longer framing stock, and rated OSB sheathing. The supplier's public catalogs now
 cover the larger request. A plywood-to-OSB subfloor alternative is a proposed
 changed requirement; technical equivalence and contractor approval are not assumed.
-Insulation facing and PEX fitting identity remain unresolved contractor facts.
+The contractor has confirmed unfaced insulation and DemoPEX expansion fittings.
+The OSB alternative now has a $716 standalone delivered quote; a complete revised
+package, installation/warranty differences, and contractor approval remain open.
 
 The earlier painting JSON files remain useful arithmetic fixtures. The separate
 `src/demoScenario.js` framing-lumber fixture is a UX simulation. Neither is the
@@ -89,4 +97,6 @@ See [its handoff](voice-handoff.md). It stays inside the buyer container. Christ
 now wants a human teammate playing the seller through browser WebRTC for the
 voice demo. The `voice-web` launcher publishes a localhost-only session server;
 use an SSH tunnel over Tailscale from the Mac. The separate AI supplier adapter
-still uses the public supplier audio protocol. Voice cannot block the core path.
+still uses the public supplier audio protocol. Keep the verified GPT-Live speech
+and Luna/xhigh decision configuration frozen for capture. The verified human call
+contained no price offer or confirmed quote. Voice cannot block the core path.
