@@ -106,11 +106,34 @@ for the current endpoint and protocol.
 
 ## Ten-home presentation correspondence
 
-The linked ten-home source document, spreadsheet, and buying-plan document are
-published and verified in Ambiguous. A short Chip/Dana quote conversation is also
-scripted presentation correspondence; Dana is a fictional supplier contact, and
-that dialogue is not an original supplier transcript.
+The staged thread between Chip and **Dana Cole of Neighborhood Supply** uses a
+fictional supplier persona and a controlled mailbox alias. Its request, $84,317.30
+opening price, $82,000 counteroffer, and $82,000 confirmation are authored message
+copy, not a fresh live supplier-agent exchange or independently issued commercial
+offers. Message delivery uses the actual send time; no historical timestamps are
+fabricated. Thread publication and delivery must be verified separately from copy
+preparation. The verified single-house exchange remains a distinct record.
 
+A second staged thread uses **Marcus Reed of General Building Supply**, a separate
+fictional contact and controlled alias. Marcus's conversational, delivery-focused
+exchange asks about site access and receiving arrangements; Dana's thread focuses
+on package price. Marcus's $84,536.30 opening amount scales the single-house
+$8,453.63 opening figure by ten. His $83,800 revised amount is an authored
+negotiation outcome for this presentation, not a fresh or previously verified
+supplier concession. Dana's $82,000 package remains the selected presentation
+option. These are two distinct native email conversations when published;
+preparing their copy alone does not establish delivery.
+
+Both native four-message threads were delivered and visually verified in the
+contractor's Builders Co inbox at about 3:56 pm Pacific on September 12. Each shows
+Chip's request, the named supplier's opening quote, Chip's counteroffer, and the
+supplier's revised quote as separate messages. The staged spreadsheet and buying
+plan were updated and read back with Marcus's $83,800 alternative and Dana's
+$82,000 selected package. These delivery checks verify presentation artifacts,
+not a fresh autonomous procurement run.
+
+The linked ten-home source document, spreadsheet, and buying-plan document are
+published and verified in Ambiguous.
 
 The user requested human-style email correspondence for the shared contractor
 inbox with larger project totals. **Six staged emails were delivered and all six
@@ -119,13 +142,16 @@ presentation props, not fresh supplier
 quotes, an actual ten-home negotiation, or a completed native-agent procurement
 outcome. Sending a prop through a real email service does not change its provenance.
 
-The amounts use direct 10× scaling of single-house scenario figures:
+The core package amounts use direct 10× scaling of single-house scenario figures;
+Marcus's revised amount is the separately authored outcome described above:
 
 | Staged correspondence amount | Derivation | Meaning |
 | --- | --- | --- |
 | $84,317.30 opening package | $8,431.73 × 10 | Authored opening-price prop |
 | $82,000 negotiated package | $8,200 × 10 | Authored revised-price prop |
 | $80,160 optional OSB package | $8,016 × 10 | Authored substitution-price prop; not an approved selection |
+| $84,536.30 Marcus opening package | $8,453.63 × 10 | Authored alternative opening-price prop |
+| $83,800 Marcus revised package | Authored presentation amount | Alternative remains $1,800 above Dana's selected package |
 
 The $8,200 single-house recommendation and its verified $231.73 reduction remain
 the separate live result. The staged ten-home amounts are not measured savings,
