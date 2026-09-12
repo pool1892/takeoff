@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hermes procurement tools. Input is JSON from a local file or stdin.
+"""Hermes procurement tools. Input is a JSON object, a local JSON file, or stdin.
 
 Examples: python /workspace/buyer/cli.py --task-id UUID snapshot
           python /workspace/buyer/cli.py --task-id UUID send --input inquiry.json
@@ -400,15 +400,30 @@ def current_quotes(state):
             for qid, q in state.get('quotes', {}).items()]
 
 
+def read_input(value=None):
+    """Accept shell-quoted JSON or a file path through the same JSON parser."""
+    if value is None:
+        source = sys.stdin.read()
+    elif value.lstrip().startswith(('{', '[')):
+        source = value
+    else:
+        source = Path(value).read_text()
+    payload = json.loads(source)
+    if not isinstance(payload, dict):
+        raise ValueError('Command input must be a JSON object')
+    return payload
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--task-id', required=True)
     parser.add_argument('command', choices=['snapshot', 'evidence', 'requirements', 'clarify', 'catalog', 'assess', 'assess_all', 'send', 'offer', 'decision', 'plan', 'publish'])
-    parser.add_argument('--input', help='JSON file; omit for JSON stdin, except snapshot')
+    parser.add_argument('--input', metavar='JSON_OR_FILE',
+                        help='Inline JSON object or JSON file path; omit for JSON stdin, except snapshot')
     args = parser.parse_args()
     if os.environ.get('TAKEOFF_SANDBOX') != '1' or not Path('/.dockerenv').exists():
         raise ValueError('Run procurement tools inside the isolated Hermes container')
-    payload = {} if args.command == 'snapshot' else json.loads(Path(args.input).read_text() if args.input else sys.stdin.read())
+    payload = {} if args.command == 'snapshot' else read_input(args.input)
     with store.transaction(args.task_id) as (state, persist):
         print(json.dumps(execute(args.command, payload, state, persist, API()), ensure_ascii=False, allow_nan=False))
 

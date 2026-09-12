@@ -27,9 +27,9 @@ class BuyerModelConfigTests(unittest.TestCase):
                                 patch.object(procurement, 'task_response', return_value=('session-1', 'Ready.')):
                             procurement.invoke(state, Path(directory))
                     command = launch.call_args.args[0]
-                    self.assertEqual(command[command.index('--model') + 1], 'gpt-5.6-luna')
+                    self.assertEqual(command[command.index('--model') + 1], 'gpt-5.6-sol')
                     self.assertEqual(command[command.index('--provider') + 1], 'takeoff-openai')
-                    self.assertEqual(command[command.index('--reasoning') + 1], 'max')
+                    self.assertEqual(command[command.index('--reasoning') + 1], 'medium')
                     if module is procurement:
                         self.assertEqual(command[command.index('--resume') + 1], 'stored-sol-session')
 

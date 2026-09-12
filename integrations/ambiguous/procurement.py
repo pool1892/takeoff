@@ -422,8 +422,8 @@ correct your input or explain the specific missing fact rather than bypass valid
         query.write(prompt)
         query.flush()
         command = ['/opt/hermes/.venv/bin/hermes', 'chat', '--oneshot', '-Q', '--ignore-rules',
-                   '--model', 'gpt-5.6-luna', '--provider', 'takeoff-openai',
-                   '--reasoning', 'max', '--max-turns', '24', '--run-budget', '240', '--query-file', query.name]
+                   '--model', 'gpt-5.6-sol', '--provider', 'takeoff-openai',
+                   '--reasoning', 'medium', '--max-turns', '24', '--run-budget', '240', '--query-file', query.name]
         if state.get('hermes_session_id'):
             command += ['--resume', state['hermes_session_id']]
         process = subprocess.Popen(command, cwd='/opt/data/workspace', stdin=subprocess.DEVNULL,

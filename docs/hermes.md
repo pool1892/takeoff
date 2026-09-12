@@ -34,8 +34,8 @@ keys as command arguments or commit them. Runtime configuration is in
 `.local/hermes/config.yaml` and credentials are in `.local/hermes/.env`, both
 ignored by Git. Initialization preserves existing files.
 
-The configured experimental buyer model is `gpt-5.6-luna` with maximum reasoning
-(`max`) and Fast processing through
+The configured experimental buyer model is `gpt-5.6-sol` with medium reasoning
+(`medium`) and Fast processing through
 a named direct OpenAI Responses provider. Change `model.default` in the local
 config and the two bridge invocation arguments together to select another model
 your key can access. Explicit model arguments prevent a resumed session from

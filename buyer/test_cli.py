@@ -1,6 +1,9 @@
 """Offline integration regressions for the buyer's durable command boundary."""
 from copy import deepcopy
+from io import StringIO
 import json
+from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
@@ -52,6 +55,26 @@ class CLITests(unittest.TestCase):
 
     def persist(self):
         self.snapshots.append(deepcopy(self.state))
+
+    def test_input_accepts_inline_json_file_and_stdin(self):
+        payload = {'id': 'supplier-mail', 'message': 'Literal $(whoami) and `command`'}
+        source = json.dumps(payload)
+        with patch.object(cli.sys, 'stdin', StringIO(source)):
+            self.assertEqual(cli.read_input(), payload)
+        self.assertEqual(cli.read_input(' \n' + source), payload)
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / 'input with spaces.json'
+            path.write_text(source)
+            self.assertEqual(cli.read_input(str(path)), payload)
+
+    def test_input_rejects_malformed_json_and_non_objects(self):
+        with self.assertRaises(json.JSONDecodeError):
+            cli.read_input('{"id": invalid}')
+        with self.assertRaisesRegex(ValueError, 'JSON object'):
+            cli.read_input('["supplier-mail"]')
+        with patch.object(cli.sys, 'stdin', StringIO('null')):
+            with self.assertRaisesRegex(ValueError, 'JSON object'):
+                cli.read_input()
 
     def test_snapshot_indexes_large_evidence_without_repeating_its_body(self):
         source = {"id": "supplier-mail", "channel": "email", "vendor_id": "general",

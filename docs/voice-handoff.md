@@ -41,21 +41,27 @@ avoid conflicting instructions. All coordination emails are user-authorized.
 
 Christoph chose GPT-Live (`gpt-live-1`, full duplex) for the buyer's voice and a
 live human teammate playing the seller for the demo. Implementation and interface:
-[`integrations/voice/README.md`](../integrations/voice/README.md). Delegated
-decisions run on `gpt-5.6-luna` at `reasoning.effort=xhigh` (the Live API rejects
-`max`); speech stays on
-`gpt-live-1`. Launch: `scripts/hermes voice-web --request /opt/data/voice/human-request.json`
+[`integrations/voice/README.md`](../integrations/voice/README.md). Speech stays on
+`gpt-live-1`. Delegated decisions: **defaults `gpt-5.6-luna` at
+`reasoning.effort=xhigh`** — Christoph's call for the live demo: use what worked
+(a Sol/medium switch was tried after the API tier upgrade and reverted; set in
+`integrations/voice/call.py`, overridable with `TAKEOFF_VOICE_MODEL` /
+`TAKEOFF_VOICE_REASONING`). The Live delegation rejects `max` (HTTP 400); `xhigh`
+is the accepted cap. Launch: `scripts/hermes voice-web --request /opt/data/voice/human-request.json`
 (main's launcher publishes `127.0.0.1:3000`; the seller reaches it over an SSH
-local forward from the Mac and opens the printed `/s/<token>/` page).
+local forward from the Mac and opens the printed `/s/<token>/` page). A running
+server keeps the defaults it started with; main restarts it only when no call is
+active.
 
 Verified (evidence under `/opt/data/voice/calls/`, i.e. `.local/hermes/voice/calls/`):
 
 - `c0b4bad0fe49` — **live human call** from the hackathon Mac to the buyer agent
   in the isolated container (session `live_u7_ENPqYgriGjqchDSmqEbW8`, 67 s,
-  2026-09-12 21:46:46Z). Full-duplex conversation with interruptions; both
-  transcripts recorded by the buyer sideband. Status `unconfirmed`: the seller
-  quoted no prices, so no `record_quote`/`confirm_readback` fired and there is no
-  confirmed quote. Connection milestone only, not a completed quote.
+  2026-09-12 21:46:46Z), run with the then-configured `gpt-5.6-luna` / `xhigh`
+  backend. Full-duplex conversation with interruptions; both transcripts recorded
+  by the buyer sideband. Status `unconfirmed`: the seller quoted no prices, so no
+  `record_quote`/`confirm_readback` fired and there is no confirmed quote.
+  Connection milestone only, not a completed quote.
 - `a7d59524ec0f` — headless SDP → session → sideband → close handshake through
   the published port (`live_usage {"seconds": 15}`).
 - `f047de3b8d62` — in-container mock smoke of the AI-supplier bridge with real
@@ -64,6 +70,7 @@ Verified (evidence under `/opt/data/voice/calls/`, i.e. `.local/hermes/voice/cal
   fixed by spoken-number normalization in `call.py` (not re-run; no further paid
   mocks unless a new bug appears).
 
-Not verified: a human call that reaches a confirmed quote, and any live call to
-the supplier computer (it has no speech key yet). The Live delegation rejects
-`reasoning.effort=max` (HTTP 400); `xhigh` is the working cap.
+Not verified: a human call that reaches a confirmed quote (none as of 22:13Z; the
+live demo runs the same luna/xhigh configuration as that call), and any live
+call to the supplier computer (it has no speech key yet). Seller script for the
+quote-producing take: [`voice-demo-cue.md`](voice-demo-cue.md).

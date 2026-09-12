@@ -130,7 +130,7 @@ The buyer workspace reference is
 `takeoffAI`; verify its exact identity using the new buyer agent's token. Use a
 dedicated OpenAI API key. `.env.example` contains variable names only. **Chip** is
 the contractor's personal Takeoff agent in Ambiguous; its experimental runtime
-uses `gpt-5.6-luna` with maximum reasoning (`max`) and Fast processing.
+uses `gpt-5.6-sol` with medium reasoning (`medium`) and Fast processing.
 Stop it with `scripts/hermes bridge-stop`.
 
 Keep local environments, credentials, runtime state, and raw captures out of Git.
