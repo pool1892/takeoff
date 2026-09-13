@@ -2,6 +2,10 @@
 
 **An agent that turns house material requirements into an explained buying plan.**
 
+The local hackathon services were shut down on September 13, 2026. This final
+source distribution contains no runtime state or recordings. Setup requires new
+local credentials and workspace configuration. See [release privacy notes](docs/final-release.md).
+
 A general contractor gives Takeoff a procurement task. It finds suitable products,
 gathers offers, negotiates within a bounded scenario, asks about consequential
 tradeoffs, and returns a recommendation the contractor can inspect.
@@ -37,10 +41,9 @@ GitHub Issues and the linked Project are the shared tracker. Tapan and Ehsan own
 their implementation choices within the agreed interfaces. This is a fresh team
 plan; older brainstorms and module decompositions are not requirements.
 
-The buyer implementation agent can be reached at **christoph-6932@agentmail.to**
-for coordination with the supplier implementation agent. See
-[current handoffs](docs/coordination.md). This mailbox belongs to the coding
-workflow; Chip uses Ambiguous for contractor and procurement communication.
+Implementation ownership and historical integration boundaries are described in
+[the handoff notes](docs/coordination.md). Coding-agent coordination is separate
+from Chip's Ambiguous contractor and procurement communication.
 
 ## How it works
 

@@ -1,5 +1,20 @@
 # Takeoff — hackathon working instructions
 
+## Post-hackathon runtime status — September 13, 2026
+
+The project owner requested shutdown of all hackathon services. The local Hermes chat
+bridge, voice demo, and egress helpers are stopped; their Docker networks were
+removed. Local procurement and chat-intake configuration are disabled. The final
+source release excludes credentials, private recordings, and runtime state. The
+owner authorized deletion of the local hackathon folder after a verified clean push.
+Do not restart services or resume procurement without a new user instruction.
+Supplier/cloud shutdown has been requested from its owners and requires their
+confirmation; stopping the local buyer does not stop Railway or Ambiguous.
+
+The build-day instructions below are historical context, not authorization to
+restart services, poll mail, or resume procurement. Raw transcripts have been
+replaced with a short design summary for privacy.
+
 This is a one-day hackathon. Move quickly and aggressively: make sensible reversible
 decisions, use coding agents in parallel for bounded independent work, and get real
 integrations working early. Optimize for an excellent working demonstration, not a
@@ -52,9 +67,9 @@ report a fixture or unconnected component as a completed live milestone.
   symlinks to those same directories. Edit the canonical source, never make copies.
 - Skills are discovered by name/description and loaded when used. Essential context
   belongs here so neither harness depends on selecting a skill to know the architecture.
-- Historical conversations are indexed in `transcripts/README.md`. Use them to
-  recover intent, preserving chronology; current explicit decisions supersede old
-  proposals, module plans, counts, providers, and historical completion claims.
+- `transcripts/README.md` records the privacy removal of raw conversations and
+  summarizes the adopted design. Use current explicit decisions and project docs;
+  the original transcript files are not part of the final source distribution.
 
 ## The product and story
 
@@ -147,7 +162,7 @@ agents execute subtasks. Keep each agent's write ownership clear and preserve ot
 changes; do not reset, clean, or overwrite work to simplify integration.
 
 During today's hackathon, check the implementation AgentMail inbox
-**christoph-6932@agentmail.to** about once a minute while work is active, through
+**buyer-coding-agent@example.invalid** about once a minute while work is active, through
 the connector or a bounded read-only watcher. Bring supplier-agent replies into
 the active integration work promptly. This is coding-agent coordination, separate
 from Chip's Ambiguous procurement identity. If all coding slots are needed, the

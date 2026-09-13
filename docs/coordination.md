@@ -1,7 +1,7 @@
 # Implementation coordination
 
-The buyer implementation agent is **christoph-6932@agentmail.to**; Tapan's supplier
-implementation agent is **tapan-agent@agentmail.to**. Their coordination thread is
+The coding-agent email addresses have been removed from this source archive.
+Configure private coordination channels for any new run. Their historical coordination thread was
 active. GitHub Issues remain the shared record for agreed interfaces and decisions.
 Christoph authorized all coordination emails. The earlier handoff from a supplier
 demo mailbox was corrected; use the coding address for implementation coordination.
@@ -45,17 +45,17 @@ buyer fixture; provide public endpoint/address references and shareable examples
 
 Tapan owns [#2](https://github.com/pool1892/takeoff/issues/2), implemented on
 `codex/supplier-epic` in PR #30. Its public read-only discovery is available at
-`https://multiply-cameo-clash.ngrok-free.dev/public/manifest` and
+`https://supplier.example.invalid/public/manifest` and
 `/public/vendors/{general,overstock,local}/catalog`; scripted requests include
 `ngrok-skip-browser-warning: takeoff`. Access from inside the isolated buyer
 container has passed. The public host is explicitly allowed by the egress proxy.
 
-Chip sends procurement mail from `takeoff-hermes@takeoffai.ambi.cc` to
-`takeoff-overstock@spike-team.ambi.cc` for the first path. The supplier confirmed
+Chip sends procurement mail from `buyer@example.invalid` to
+`overstock@example.invalid` for the first path. The supplier confirmed
 the buyer identity mapping and its sender-scoped worker produced the first live quote. Structured
 messages use `takeoff.supplier.v1`, a fresh supplier run ID, vendor ID and message;
 replies preserve inquiry correlation and contain canonical quote JSON. The first
-three-line run is `run_402632f04bb94032b83ffa8ecd69f96f`; a new independent trial
+three-line run is `run_redacted_14`; a new independent trial
 requires a fresh supplier run. These are simulated businesses communicating over
 real services. `tax_treatment=all_fixture_taxes_included` explicitly means zero
 additional tax for this synthetic scenario, not a real tax rule.

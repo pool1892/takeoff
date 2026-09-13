@@ -1,8 +1,10 @@
 import copy
 import unittest
 
-from buyer.decisions import CONTRACTOR_ID, validate_decision, validate_proposal
+from buyer.decisions import validate_decision, validate_proposal
 from buyer.test_actions import fixture as action_fixture
+
+CONTRACTOR_ID = 'contractor-fixture'
 
 
 def fixture():
@@ -23,6 +25,22 @@ def fixture():
 
 
 class DecisionsTest(unittest.TestCase):
+    def test_authority_uses_the_runs_explicit_contractor_identity(self):
+        run, quotes, proposal, answer = fixture()
+        run['contractor_id'] = 'another-configured-contractor'
+        with self.assertRaisesRegex(ValueError, 'actual contractor'):
+            validate_decision(answer, proposal, run, quotes)
+        answer['source']['author_id'] = run['contractor_id']
+        self.assertTrue(validate_decision(answer, proposal, run, quotes)['validated'])
+        for invalid in (None, '', ' ', 123):
+            with self.subTest(contractor_id=invalid), self.assertRaisesRegex(ValueError, 'actual contractor'):
+                run['contractor_id'] = invalid
+                answer['source']['author_id'] = invalid
+                validate_decision(answer, proposal, run, quotes)
+        run.pop('contractor_id')
+        with self.assertRaisesRegex(ValueError, 'actual contractor'):
+            validate_decision(answer, proposal, run, quotes)
+
     def test_approval_is_exact_and_rejection_grants_nothing(self):
         run, quotes, proposal, answer = fixture()
         original = copy.deepcopy(answer)

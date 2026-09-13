@@ -5,11 +5,15 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from bridge import BridgeError, CONTRACTOR, WORKSPACE
+from bridge import BridgeError
+import intake
 from intake import admit
 
+CONTRACTOR = '99999999-9999-4999-8999-999999999999'
+WORKSPACE = '88888888-8888-4888-8888-888888888888'
 AGENT = '11111111-1111-4111-8111-111111111111'
 CHANNEL = '22222222-2222-4222-8222-222222222222'
 MESSAGE = '33333333-3333-4333-8333-333333333333'
@@ -75,6 +79,9 @@ class FakeAPI:
 
 class IntakeTests(unittest.TestCase):
     def setUp(self):
+        identities = patch.multiple(intake, CONTRACTOR=CONTRACTOR, WORKSPACE=WORKSPACE)
+        identities.start()
+        self.addCleanup(identities.stop)
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.home = Path(self.tmp.name)

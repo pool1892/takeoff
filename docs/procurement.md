@@ -9,12 +9,12 @@ and recommendations appear as comments on the originating Ambiguous task.
 
 The first live integration slice completed at **14:35 PDT on September 12, 2026**,
 using actual task
-`285b8a73-572a-4e0a-9509-f97cf994f6f6` and fresh supplier run
-`run_402632f04bb94032b83ffa8ecd69f96f`. It covers the first three source lines;
+`00000000-0000-4000-8000-000000000001` and fresh supplier run
+`run_redacted_14`. It covers the first three source lines;
 it does not establish completion of the 25-component house package. The task was
 created under Chip for integration testing, not authored by the contractor.
 Hermes received the remote supplier's canonical issued quote
-`quote_d7479895425441aa89b8ddb47946ddcc` revision 1, validated all three lines at
+`quote_redacted_11` revision 1, validated all three lines at
 **USD 2,300 delivered**, published the recommendation, and completed the task.
 The buyer chose its initial $2,300 proposal and stopped when the supplier matched
 it; this run does not demonstrate a post-quote counteroffer or substitution approval.

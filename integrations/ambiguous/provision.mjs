@@ -1,12 +1,10 @@
 #!/usr/bin/env node
-// One-time, explicitly authorized setup of Christoph's managed Takeoff agent.
+// One-time, explicitly authorized setup of the configured contractor's Takeoff agent.
 import { closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, lstatSync, openSync, readFileSync, realpathSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
-const WORKSPACE = "9ab01362-770d-4f8c-98a5-c431e5e44dac";
-const MANAGER = "9df6ad27-165e-4534-8e26-800b5a33ab6a";
 const NAME = "Takeoff Hermes";
 const USERNAME = "takeoff-hermes";
 export const SCOPES = [
@@ -61,7 +59,7 @@ function replaceToken(root, token) {
   }
 }
 
-export async function provision({ root, token, origin = "https://api.ambiguous.ai", fetcher = fetch, log = console.log }) {
+export async function provision({ root, token, workspaceId, managerUserId, origin = "https://api.ambiguous.ai", fetcher = fetch, log = console.log }) {
   const state = { stage: "validate bootstrap identity", agent_id: null, initial_key_id: null, scoped_key_id: null, credential_saved: false, initial_key_revoked: false };
   const request = async (method, endpoint, body, credential = token) => {
     let response;
@@ -82,11 +80,15 @@ export async function provision({ root, token, origin = "https://api.ambiguous.a
   };
   try {
     requireValue(["https://api.ambiguous.ai", "https://app.ambiguous.ai"].includes(origin), "Unverified API origin.");
+    requireValue(uuid(workspaceId), "Configure TAKEOFF_AMBIGUOUS_WORKSPACE_ID with the verified workspace UUID.");
+    requireValue(uuid(managerUserId), "Configure TAKEOFF_AMBIGUOUS_CONTRACTOR_ID with the verified human manager UUID.");
+    workspaceId = workspaceId.toLowerCase();
+    managerUserId = managerUserId.toLowerCase();
     requireValue(typeof token === "string" && token.startsWith("ak_") && !/[\r\n\0]/.test(token), "A valid bootstrap API key is required in the isolated environment.");
     credentialFile(root);
     const me = await request("GET", "/api/users/me");
     const workspace = await request("GET", "/api/workspace");
-    requireValue(me.id === MANAGER && me.workspace_id === WORKSPACE && me.type === "human", "Bootstrap key is not Christoph's verified contractor identity in takeoffAI.");
+    requireValue(me.id === managerUserId && me.workspace_id === workspaceId && me.type === "human", "Bootstrap key does not match the configured human contractor and workspace.");
     requireValue([workspace.name, workspace.slug].some((value) => typeof value === "string" && value.toLowerCase() === "takeoffai"), "Workspace name/slug does not match takeoffAI.");
 
     state.stage = "check for an existing Takeoff agent";
@@ -107,9 +109,9 @@ export async function provision({ root, token, origin = "https://api.ambiguous.a
       seenCursors.add(cursor);
     }
 
-    state.stage = "create Christoph's managed Takeoff Hermes agent";
+    state.stage = "create the contractor's managed Takeoff Hermes agent";
     const created = await request("POST", "/api/admin/users/provision-agent", {
-      display_name: NAME, username: USERNAME, role: "member", manager_user_id: MANAGER,
+      display_name: NAME, username: USERNAME, role: "member", manager_user_id: managerUserId,
     });
     requireValue(uuid(created.user?.id), "Provisioning response did not contain an agent UUID; inspect workspace before retrying.");
     state.agent_id = created.user.id;
@@ -135,7 +137,7 @@ export async function provision({ root, token, origin = "https://api.ambiguous.a
 
     state.stage = "verify the scoped runtime identity";
     const agent = await request("GET", "/api/users/me", undefined, scoped.raw_key);
-    requireValue(agent.id === state.agent_id && agent.workspace_id === WORKSPACE && agent.type === "agent", "Scoped key resolves to an unexpected identity; no credential installed.");
+    requireValue(agent.id === state.agent_id && agent.workspace_id === workspaceId && agent.type === "agent", "Scoped key resolves to an unexpected identity; no credential installed.");
     const agentWorkspace = await request("GET", "/api/workspace", undefined, scoped.raw_key);
     requireValue([agentWorkspace.name, agentWorkspace.slug].some((value) => typeof value === "string" && value.toLowerCase() === "takeoffai"), "Scoped key workspace reference mismatch; no credential installed.");
 
@@ -148,7 +150,7 @@ export async function provision({ root, token, origin = "https://api.ambiguous.a
     requireValue(Array.isArray(remaining.data) && !remaining.data.some((key) => key.id === state.initial_key_id) && remaining.data.some((key) => key.id === state.scoped_key_id), "Could not verify initial-key revocation; inspect the reported key IDs.");
     state.initial_key_revoked = true;
     state.stage = "complete";
-    const result = { ...state, workspace_id: WORKSPACE, manager_user_id: MANAGER, display_name: NAME, username: USERNAME, scope_count: SCOPES.length };
+    const result = { ...state, workspace_id: workspaceId, manager_user_id: managerUserId, display_name: NAME, username: USERNAME, scope_count: SCOPES.length };
     log(JSON.stringify(result, null, 2));
     return result;
   } catch (error) {
@@ -159,13 +161,16 @@ export async function provision({ root, token, origin = "https://api.ambiguous.a
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (process.argv[2] !== "--apply") {
-    console.log("Creates Christoph's managed Takeoff Hermes member agent in verified takeoffAI, installs a 15-scope runtime key, and revokes only its automatically generated initial key. Run inside the Takeoff container with --apply after authorization.");
+    console.log("Creates the configured contractor's managed Takeoff Hermes member agent in verified takeoffAI, installs a 15-scope runtime key, and revokes only its automatically generated initial key. Set TAKEOFF_AMBIGUOUS_CONTRACTOR_ID and TAKEOFF_AMBIGUOUS_WORKSPACE_ID; run inside the Takeoff container with --apply after authorization.");
   } else {
     try {
       requireValue(process.env.TAKEOFF_SANDBOX === "1" && existsSync("/.dockerenv"), "Use the Takeoff container launcher.");
       const root = realpathSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../.."));
       requireValue(realpathSync(process.env.HOME || "/").startsWith(`${root}${path.sep}`), "HOME must remain inside the Takeoff repository.");
-      await provision({ root, token: process.env.AMBI_API_TOKEN, origin: (process.env.AMBI_API_URL || "https://api.ambiguous.ai").replace(/\/+$/, "") });
+      await provision({ root, token: process.env.AMBI_API_TOKEN,
+        workspaceId: process.env.TAKEOFF_AMBIGUOUS_WORKSPACE_ID?.trim(),
+        managerUserId: process.env.TAKEOFF_AMBIGUOUS_CONTRACTOR_ID?.trim(),
+        origin: (process.env.AMBI_API_URL || "https://api.ambiguous.ai").replace(/\/+$/, "") });
     } catch (error) {
       console.error(`Takeoff provisioning: ${error instanceof SetupError ? error.message : "Local runtime initialization failed."}`);
       process.exitCode = 1;

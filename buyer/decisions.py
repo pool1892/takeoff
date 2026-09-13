@@ -8,9 +8,6 @@ from copy import deepcopy
 
 from .actions import _check_numbers, _current_offer, _id, _records, _scope, _time
 
-CONTRACTOR_ID = '9df6ad27-165e-4534-8e26-800b5a33ab6a'
-
-
 def validate_proposal(proposal, run, offers=(), candidates=()):
     """Check a proposed substitution before publication; grant no permission.
 
@@ -119,7 +116,9 @@ def validate_decision(answer, proposal, run, offers=(), candidates=(), existing_
     source = answer.get('source')
     if not isinstance(source, dict) or not isinstance(source.get('id'), str) or not source['id'].strip():
         raise ValueError('answer needs an immutable source comment id')
-    if run.get('contractor_id', CONTRACTOR_ID) != CONTRACTOR_ID or source.get('author_id') != CONTRACTOR_ID:
+    contractor_id = run.get('contractor_id')
+    if (not isinstance(contractor_id, str) or not contractor_id.strip()
+            or source.get('author_id') != contractor_id):
         raise ValueError('only the actual contractor can answer this proposal')
     answered_at = _time(source.get('created_at'))
     if source.get('deleted_at') or source.get('edited_at') or source.get('updated_at') not in (None, source['created_at']):

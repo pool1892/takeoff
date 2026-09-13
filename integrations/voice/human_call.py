@@ -21,6 +21,7 @@ import argparse
 import asyncio
 from decimal import Decimal, InvalidOperation
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -28,7 +29,9 @@ import re
 import secrets
 import sys
 import threading
+import tempfile
 import time
+from urllib.parse import parse_qs, urlsplit
 import uuid
 
 import httpx
@@ -40,6 +43,7 @@ SESSIONS_URL = 'https://api.openai.com/v1/live/sessions'
 ATTACH_URL = 'wss://api.openai.com/v1/live/sessions/{id}/attach'
 BUYER_VOICE = 'meridian'
 HUMAN_MAX_SECONDS = 900
+MAX_RECORDING_BYTES = 60_000_000
 AFFIRMATIVE = re.compile(r"\b(yes|yeah|yep|correct|confirmed?|that's right|that is right|exactly|agreed|deal|sounds right)\b", re.I)
 
 LIVE_INSTRUCTIONS = """You are Takeoff, a procurement assistant on a live phone call with a building-material supplier, calling on behalf of a general contractor. The person on the line is a human at the supplier. Be warm, brief, and professional: one point at a time, then listen. Say quantities with units and prices with currency clearly.
@@ -138,7 +142,8 @@ class HumanCall:
         self.session_id = session_id
         self.attempt_id = uuid.uuid4().hex[:12]
         self.directory = Path(home) / 'calls' / self.attempt_id
-        self.directory.mkdir(parents=True, exist_ok=True)
+        self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self.evidence_lock = threading.RLock()
         self.started = time.monotonic()
         self.seller_text, self.buyer_text = [], []
         self.candidates, self.tool_log, self.flags = {}, [], []
@@ -160,9 +165,24 @@ class HumanCall:
         self.save()
 
     def save(self):
-        self.result['candidates'] = list(self.candidates.values())
-        self.result['elapsed_seconds'] = round(time.monotonic() - self.started, 1)
-        (self.directory / 'call.json').write_text(json.dumps(self.result, indent=2, ensure_ascii=False))
+        with self.evidence_lock:
+            self.result['candidates'] = list(self.candidates.values())
+            self.result['elapsed_seconds'] = round(time.monotonic() - self.started, 1)
+            self.write_private('call.json', json.dumps(self.result, indent=2, ensure_ascii=False).encode())
+
+    def write_private(self, name, data):
+        """Publish complete evidence atomically, with owner-only file permissions."""
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(dir=self.directory, delete=False) as output:
+                temporary = output.name
+                output.write(data)
+                output.flush()
+                os.fsync(output.fileno())
+            os.replace(temporary, self.directory / name)
+        finally:
+            if temporary and os.path.exists(temporary):
+                os.unlink(temporary)
 
     def finish(self, status, reason):
         if self.result['finished_at'] is None:
@@ -172,6 +192,42 @@ class HumanCall:
             if self.result['confirmed_quote'] is None and self.candidates:
                 self.result['proposed_offer'] = list(self.candidates.values())[-1]['quote']
         self.save()
+        self.write_transcript()
+
+    def write_transcript(self):
+        """Readable, time-ordered transcript beside call.json (fragments merged per speaker run)."""
+        rows = sorted([('seller', r) for r in self.seller_text] + [('buyer', r) for r in self.buyer_text],
+                      key=lambda item: (item[1].get('start_ms') or 0))
+        lines, current, buffer, started = [], None, '', 0
+        for speaker, row in rows:
+            if speaker != current and buffer:
+                lines.append(f'[{started / 1000:6.1f}s] {current.upper():6} {buffer.strip()}')
+                buffer = ''
+            if speaker != current:
+                current, started = speaker, row.get('start_ms') or 0
+            buffer += row['text']
+        if buffer:
+            lines.append(f'[{started / 1000:6.1f}s] {current.upper():6} {buffer.strip()}')
+        header = [f"Takeoff live call {self.attempt_id} (session {self.session_id})", f"status: {self.result['status']} — {self.result['outcome_reason']}",
+                  'seller: human teammate (simulated business); buyer: gpt-live-1 agent', '']
+        self.write_private('transcript.txt', ('\n'.join(header + lines) + '\n').encode())
+
+    def save_recording(self, data):
+        # Reject empty/non-WebM uploads; this is header validation, not a media decoder.
+        if not 0 < len(data) <= MAX_RECORDING_BYTES or not data.startswith(b'\x1a\x45\xdf\xa3') or b'\x42\x82\x84webm' not in data[:4096]:
+            raise ValueError('a WebM recording is required')
+        digest = hashlib.sha256(data).hexdigest()
+        with self.evidence_lock:
+            path = self.directory / 'call.webm'
+            if path.exists():
+                if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+                    raise FileExistsError('a different recording already exists for this attempt')
+            else:
+                self.write_private('call.webm', data)
+            self.result['evidence'].update(audio_path=str(path), audio_sha256=digest,
+                audio_note='mixed seller microphone + buyer audio, recorded in the seller browser (Opus/WebM)')
+            self.save()
+            return path
 
     def spoken(self, rows, since_ms=0):
         return ''.join(r['text'] for r in rows if r['end_ms'] >= since_ms)
@@ -277,14 +333,16 @@ class HumanCall:
             if self.result['finished_at'] is None:
                 self.finish('confirmed' if self.result['status'] == 'confirmed' else 'unconfirmed', 'session closed by the seller')
             self.save()
+            self.write_transcript()  # Include final speech received after end_call.
 
 
 class Server:
-    def __init__(self, request_path, env, home, token):
+    def __init__(self, request_path, env, home, token, public_url=''):
         self.request_path = Path(request_path)
         self.env = env
         self.home = home
         self.token = token
+        self.public_origin = public_url.rstrip('/')
         self.calls = {}
         self.loop = asyncio.new_event_loop()
         threading.Thread(target=self.loop.run_forever, daemon=True).start()
@@ -344,6 +402,8 @@ def make_handler(server):
             self.send_header('Content-Type', content_type)
             self.send_header('Content-Length', str(len(data)))
             self.send_header('Cache-Control', 'no-store')
+            self.send_header('Referrer-Policy', 'no-referrer')
+            self.send_header('X-Content-Type-Options', 'nosniff')
             self.end_headers()
             self.wfile.write(data)
 
@@ -365,20 +425,61 @@ def make_handler(server):
             return self.reply(404, {'error': 'not found'})
 
         def do_POST(self):
-            if not self.authorized() or not self.path.endswith('/api/session'):
+            parsed = urlsplit(self.path)
+            prefix = f'/s/{server.token}/api/'
+            if parsed.path not in (prefix + 'session', prefix + 'recording'):
                 return self.reply(404, {'error': 'not found'})
-            # CSRF guard for the key-holding endpoint (the URL token is the auth). Accept the page's own
-            # origin even when a TCP relay or SSH forward rewrites Host: same host, or a loopback origin.
+            # A relay may rewrite Host, but only the explicitly configured public origin is trusted.
             origin, host = self.headers.get('Origin', ''), self.headers.get('Host', '')
-            origin_host = origin.split('://', 1)[-1] if origin else ''
-            if not origin_host or not (origin_host == host or origin_host.split(':')[0] in ('localhost', '127.0.0.1')
-                                       or origin_host.endswith('.ts.net')):
+            try:
+                origin_parts = urlsplit(origin)
+            except ValueError:
                 return self.reply(403, {'error': 'unexpected request origin'})
-            length = int(self.headers.get('Content-Length', '0'))
-            if not 0 < length <= 65536:
+            if (origin_parts.scheme not in ('http', 'https') or origin_parts.path or origin_parts.query
+                    or origin_parts.fragment or origin_parts.username or origin_parts.password
+                    or not (origin_parts.netloc == host or origin == server.public_origin)):
+                return self.reply(403, {'error': 'unexpected request origin'})
+            lengths = self.headers.get_all('Content-Length', [])
+            if len(lengths) != 1 or not lengths[0].isascii() or not lengths[0].isdigit() or self.headers.get('Transfer-Encoding'):
+                return self.reply(400, {'error': 'a single valid Content-Length is required'})
+            try:
+                length = int(lengths[0])
+            except ValueError:
+                return self.reply(400, {'error': 'invalid Content-Length'})
+            recording = parsed.path == prefix + 'recording'
+            if recording:
+                query = parse_qs(parsed.query)
+                attempts = query.get('attempt', [])
+                if len(attempts) != 1:
+                    return self.reply(400, {'error': 'one recording attempt is required'})
+                call = server.calls.get(attempts[0])
+                if call is None:
+                    return self.reply(404, {'error': 'unknown attempt'})
+                if not 0 < length <= MAX_RECORDING_BYTES:
+                    return self.reply(400, {'error': 'recording size out of range'})
+                if self.headers.get('Content-Type', '').split(';', 1)[0].strip().lower() != 'audio/webm':
+                    return self.reply(415, {'error': 'Content-Type must be audio/webm'})
+            elif not 0 < length <= 65536:
                 return self.reply(400, {'error': 'an SDP offer is required'})
             try:
-                sdp = json.loads(self.rfile.read(length)).get('sdp', '')
+                self.connection.settimeout(10)
+                data = self.rfile.read(length)
+            except (TimeoutError, OSError):
+                return self.reply(408, {'error': 'request body timed out'})
+            if len(data) != length:
+                return self.reply(400, {'error': 'incomplete request body'})
+            if recording:
+                try:
+                    call.save_recording(data)
+                except FileExistsError:
+                    return self.reply(409, {'error': 'a recording already exists for this attempt'})
+                except ValueError:
+                    return self.reply(400, {'error': 'a WebM recording is required'})
+                except OSError:
+                    return self.reply(500, {'error': 'recording could not be saved'})
+                return self.reply(201, {'saved': True, 'bytes': length})
+            try:
+                sdp = json.loads(data).get('sdp', '')
                 if not isinstance(sdp, str) or not sdp.strip():
                     raise ValueError
             except (ValueError, AttributeError):
@@ -389,7 +490,8 @@ def make_handler(server):
                 return self.reply(502, {'error': str(error)})
 
         def log_message(self, fmt, *args):
-            sys.stderr.write('%s - %s\n' % (self.address_string(), fmt % args))
+            message = (fmt % args).replace(f'/s/{server.token}', '/s/[redacted]')
+            sys.stderr.write('%s - %s\n' % (self.address_string(), message))
     return Handler
 
 
@@ -404,7 +506,11 @@ def main():
     if not os.environ.get('OPENAI_API_KEY'):
         raise SystemExit('OPENAI_API_KEY must be set in the environment (never pass it as an argument).')
     token = os.environ.get('TAKEOFF_VOICE_WEB_TOKEN') or secrets.token_urlsafe(12)
-    server = Server(args.request, os.environ, voice_home(os.environ), token)
+    if args.public_url:
+        public = urlsplit(args.public_url)
+        if public.scheme not in ('https', 'http') or not public.netloc or public.path not in ('', '/') or public.query or public.fragment or public.username or public.password:
+            raise SystemExit('--public-url must be an HTTP(S) origin without a path or credentials')
+    server = Server(args.request, os.environ, voice_home(os.environ), token, args.public_url)
     server.request()  # fail early on a bad request file
     httpd = ThreadingHTTPServer((args.bind, args.port), make_handler(server))
     base = args.public_url.rstrip('/') or f'http://127.0.0.1:{args.port}'

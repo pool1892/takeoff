@@ -11,13 +11,15 @@ from unittest.mock import patch
 spec = importlib.util.spec_from_file_location('bridge', Path(__file__).with_name('bridge.py'))
 bridge = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bridge)
-AGENT = 'a79f71d9-b99f-4119-b7e4-da9397de466f'
+CONTRACTOR = '99999999-9999-4999-8999-999999999999'
+WORKSPACE = '88888888-8888-4888-8888-888888888888'
+AGENT = '11111111-1111-4111-8111-111111111111'
 CHANNEL = '00000000-0000-4000-8000-000000000001'
 MESSAGE = '00000000-0000-4000-8000-000000000002'
 REPLY = '00000000-0000-4000-8000-000000000003'
 
 
-def message(id=MESSAGE, author=bridge.CONTRACTOR, content='Hello'):
+def message(id=MESSAGE, author=CONTRACTOR, content='Hello'):
     return dict(id=id, channel_id=CHANNEL, content=content, author={'id': author},
                 created_at='2026-09-12T12:00:00Z', thread_id=None)
 
@@ -48,6 +50,9 @@ class API:
 
 class BridgeTests(unittest.TestCase):
     def setUp(self):
+        identities = patch.multiple(bridge, CONTRACTOR=CONTRACTOR, WORKSPACE=WORKSPACE)
+        identities.start()
+        self.addCleanup(identities.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.path = Path(self.temp.name) / 'state.json'
         self.api = API()
@@ -62,6 +67,30 @@ class BridgeTests(unittest.TestCase):
 
     def instance(self):
         return bridge.Bridge(self.api, self.path, AGENT, self.runner)
+
+    def test_api_requires_explicit_valid_identities_before_building_transport(self):
+        for field in ('CONTRACTOR', 'WORKSPACE'):
+            for invalid in ('', 'not-a-uuid'):
+                with self.subTest(field=field, value=invalid), patch.object(bridge, field, invalid), \
+                        patch.object(bridge.urllib.request, 'build_opener') as opener:
+                    with self.assertRaisesRegex(bridge.BridgeError, 'Configure TAKEOFF_AMBIGUOUS_'):
+                        bridge.API()
+                    opener.assert_not_called()
+
+    def test_api_accepts_configured_synthetic_identities_without_networking(self):
+        with patch.dict(bridge.os.environ, {'AMBI_API_TOKEN': 'test-token-never-valid'}), \
+                patch.object(bridge.urllib.request, 'build_opener') as opener:
+            bridge.API()
+            opener.assert_called_once()
+
+    def test_identity_configuration_is_loaded_without_personal_defaults(self):
+        for env, expected in (({}, ('', '')), ({
+                'TAKEOFF_AMBIGUOUS_CONTRACTOR_ID': CONTRACTOR,
+                'TAKEOFF_AMBIGUOUS_WORKSPACE_ID': WORKSPACE}, (CONTRACTOR, WORKSPACE))):
+            with self.subTest(configured=bool(env)), patch.dict(bridge.os.environ, env, clear=True):
+                fresh = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(fresh)
+                self.assertEqual((fresh.CONTRACTOR, fresh.WORKSPACE), expected)
 
     def test_repeated_poll_and_restart_do_not_loop_or_duplicate(self):
         instance = self.instance()

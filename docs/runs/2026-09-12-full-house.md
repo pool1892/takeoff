@@ -74,11 +74,11 @@ confirmed quote; keep its working GPT-Live / Luna-xhigh configuration frozen.
 
 ## Commercial record references
 
-- Selected revision 2: `quote_42112ae4ce134d598836842f080c30dc`.
-- Neighborhood opening: `quote_5c8c312693f5496d8768ed05ea8449f5`.
-- General opening: `quote_e08fd4074c1942f0a6274f906342662e`.
-- Second Shift partial opening: `quote_0ea0391ad8554fc6b1843c2556c13f76`.
-- Unapproved OSB option: `quote_9ee35e07ea354205b7ea17fd157b3f32`.
+- Selected revision 2: `quote_redacted_08`.
+- Neighborhood opening: `quote_redacted_09`.
+- General opening: `quote_redacted_12`.
+- Second Shift partial opening: `quote_redacted_07`.
+- Unapproved OSB option: `quote_redacted_10`.
 
 The [opening-offer checkpoint](2026-09-12-full-house-openings.md) preserves the
 earlier state. Raw messages, task links, credentials, and supplier-private state

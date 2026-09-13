@@ -36,7 +36,10 @@ The supplier machine must serve a public HTTPS tunnel or another mutually reacha
 
 ## Configure the real channels
 
-Workspace setup is separate from the fixture. The adopted buyer workspace is `9ab01362-770d-4f8c-98a5-c431e5e44dac`, with sender `takeoff-hermes@takeoffai.ambi.cc`. Configure that reference and the separate supplier workspace; never reuse an unrelated old workspace. A known workspace reference does not establish that a remote exchange has succeeded.
+Workspace setup is separate from the fixture. The examples below use a synthetic
+buyer workspace ID and `buyer@example.invalid`; replace both with your configured
+buyer identity and configure a separate supplier workspace. A known workspace
+reference does not establish that a remote exchange has succeeded.
 
 The nonsecret configuration has this shape:
 
@@ -46,7 +49,7 @@ The nonsecret configuration has this shape:
   "transport_path": ".local/suppliers/transport.sqlite",
   "scenario_path": "src/takeoff_suppliers/fixtures/house.json",
   "buyer_id": "demo-buyer",
-  "buyer_workspace_id": "9ab01362-770d-4f8c-98a5-c431e5e44dac",
+  "buyer_workspace_id": "00000000-0000-4000-8000-000000000004",
   "supplier_workspace_id": "CURRENT_SUPPLIER_WORKSPACE_ID",
   "supplier_workspace_slug": "CURRENT_SUPPLIER_WORKSPACE_SLUG",
   "runtime_backend": "codex",
@@ -58,7 +61,7 @@ The nonsecret configuration has this shape:
       "token_env": "AMBIGUOUS_GENERAL_API_KEY",
       "email": "GENERAL_VENDOR_EMAIL",
       "chat_threads": [],
-      "buyers": {"takeoff-hermes@takeoffai.ambi.cc": "demo-buyer"},
+      "buyers": {"buyer@example.invalid": "demo-buyer"},
       "chat_buyers": {}
     }
   }
@@ -80,7 +83,7 @@ catalog endpoint. Keep the server, worker, and tunnel running for the current de
 
 Codex uses isolated supplier threads and host-controlled catalog, inquiry, and offer tools. The host connects those agents to Ambiguous mail and records. Personal Codex tools and filesystem execution are disabled for supplier turns. The hosted backend additionally supports read-only Ambiguous MCP and optional Exa MCP through `exa_mcp_url`; keep credential-bearing URLs in ignored configuration. Exa research in the Codex backend and trading execution remain extensions.
 
-For each participating vendor, configure `buyers` as `{"takeoff-hermes@takeoffai.ambi.cc": "demo-buyer"}` (or the same logical buyer ID configured for its run). Chat uses `chat_threads` pairs of `[channel_id, root_message_id]` and `chat_buyers` mapping sender user IDs to the logical buyer ID. Polling is limited to those configured senders and threads. Email is the cross-workspace agent transport; chat is supported within configured workspace conversations. Actual cross-computer delivery and response still require a captured round trip.
+For each participating vendor, configure `buyers` as `{"buyer@example.invalid": "demo-buyer"}` (or the same logical buyer ID configured for its run). Chat uses `chat_threads` pairs of `[channel_id, root_message_id]` and `chat_buyers` mapping sender user IDs to the logical buyer ID. Polling is limited to those configured senders and threads. Email is the cross-workspace agent transport; chat is supported within configured workspace conversations. Actual cross-computer delivery and response still require a captured round trip.
 
 ```sh
 .venv/bin/python -m takeoff_suppliers.cli doctor

@@ -12,12 +12,20 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from procurement import Procurement, mail_text, task_response, successful_turn, notify_question, notify_pending_questions
-from bridge import CONTRACTOR, BridgeError
+from bridge import BridgeError
+import procurement
 from buyer import store
 from buyer.cli import execute
 
+CONTRACTOR = 'contractor-fixture'
 AGENT = 'buyer-agent'
 SUPPLIER = 'supplier@example.test'
+
+
+def setUpModule():
+    identity = patch.object(procurement, 'CONTRACTOR', CONTRACTOR)
+    identity.start()
+    unittest.addModuleCleanup(identity.stop)
 
 
 class FakeAPI:
@@ -92,6 +100,22 @@ class ProcurementTests(unittest.TestCase):
         state['actions'] = {'inquiry-1': {'id': 'inquiry-1', 'input': {'vendor_id': 'vendor-1'},
                                           'status': 'sent', 'result': {'id': 'sent-mail-1'}}}
         return state
+
+    def test_existing_run_cannot_change_its_contractor_or_agent_identity(self):
+        for field in ('contractor_id', 'agent_id'):
+            with self.subTest(field=field):
+                state = self.initialized()
+                state[field] = 'other-identity'
+                with store.transaction(self.task['id']) as (saved, persist):
+                    saved.clear()
+                    saved.update(state)
+                    persist()
+                self.api.calls.clear()
+                with self.assertRaisesRegex(BridgeError, 'Run identities differ'):
+                    self.listener.poll()
+                self.assertEqual(self.state(), state)
+                self.assertEqual(self.turns, [])
+                self.assertTrue(all(call[1] == 'GET' for call in self.api.calls))
 
     def mail(self, **patches):
         result = {'id': 'reply-1', 'from': {'email': SUPPLIER}, 'subject': 'Takeoff run-1 inquiry-1',

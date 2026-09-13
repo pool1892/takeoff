@@ -25,7 +25,9 @@ a substitution approval.
 
 - `OPENAI_API_KEY` — buyer key (Live session, delegated model, TTS/STT).
 - `TAKEOFF_BUYER_TOKEN` — supplier-issued buyer token (AI-supplier paths only).
-- `TAKEOFF_SUPPLIER_HOST` — bare supplier host, default `multiply-cameo-clash.ngrok-free.dev`.
+- `TAKEOFF_SUPPLIER_HOST` — your bare supplier hostname; the default
+  `supplier.example.invalid` is an inert placeholder. Review and add the hostname
+  to `runtime/hermes/egress.py` before a container-based supplier call.
 - `TAKEOFF_VOICE_HOME`, `TAKEOFF_VOICE_WEB_PORT` (3000), `TAKEOFF_VOICE_WEB_TOKEN` (share-URL token).
 - Egress: `api.openai.com` (HTTPS + WSS) and the supplier host through the container proxy.
 

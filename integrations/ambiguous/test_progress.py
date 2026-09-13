@@ -4,11 +4,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 import sys
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from bridge import BridgeError, CONTRACTOR
+from bridge import BridgeError
+import progress
 from progress import notify_progress, overview
 
+CONTRACTOR = '99999999-9999-4999-8999-999999999999'
 AGENT = '11111111-1111-4111-8111-111111111111'
 CHANNEL = '22222222-2222-4222-8222-222222222222'
 TASK = '33333333-3333-4333-8333-333333333333'
@@ -45,6 +48,9 @@ class FakeAPI:
 
 class ProgressTests(unittest.TestCase):
     def setUp(self):
+        identity = patch.object(progress, 'CONTRACTOR', CONTRACTOR)
+        identity.start()
+        self.addCleanup(identity.stop)
         self.api = FakeAPI()
         self.state = {'task_id': TASK, 'agent_id': AGENT, 'run_id': 'run-private', 'request_revision': 1,
             'phase': 'ready', 'requirements': [{'id': 'house-01', 'missing_essentials': []}],

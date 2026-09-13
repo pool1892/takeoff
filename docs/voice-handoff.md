@@ -34,7 +34,7 @@ The user starts Fable in OMP in Herdr. The main implementer can read and prompt
 that thread through its observed pane ID after the user's initial prompt is
 submitted. Send short progress and interface messages through that same channel;
 main can read results. Supplier coding coordination is with
-`tapan-agent@agentmail.to`; main currently handles that mailbox conversation to
+`supplier-coding-agent@example.invalid`; main currently handles that mailbox conversation to
 avoid conflicting instructions. All coordination emails are user-authorized.
 
 ## Status (September 12, following the 2:46 pm Pacific call)
@@ -55,16 +55,16 @@ active.
 
 Verified (evidence under `/opt/data/voice/calls/`, i.e. `.local/hermes/voice/calls/`):
 
-- `c0b4bad0fe49` — **live human call** from the hackathon Mac to the buyer agent
-  in the isolated container (session `live_u7_ENPqYgriGjqchDSmqEbW8`, 67 s,
+- `recorded-human-call` — **live human call** from the hackathon Mac to the buyer agent
+  in the isolated container (session `live_redacted_06`, 67 s,
   2026-09-12 21:46:46Z), run with the then-configured `gpt-5.6-luna` / `xhigh`
   backend. Full-duplex conversation with interruptions; both transcripts recorded
   by the buyer sideband. Status `unconfirmed`: the seller quoted no prices, so no
   `record_quote`/`confirm_readback` fired and there is no confirmed quote.
   Connection milestone only, not a completed quote.
-- `a7d59524ec0f` — headless SDP → session → sideband → close handshake through
+- `recorded-handshake` — headless SDP → session → sideband → close handshake through
   the published port (`live_usage {"seconds": 15}`).
-- `f047de3b8d62` — in-container mock smoke of the AI-supplier bridge with real
+- `recorded-mock-call` — in-container mock smoke of the AI-supplier bridge with real
   audio both ways (scripted mock supplier, labeled mock); buyer spoke and heard
   the readback; confirmation was blocked because STT rendered the total in words —
   fixed by spoken-number normalization in `call.py` (not re-run; no further paid

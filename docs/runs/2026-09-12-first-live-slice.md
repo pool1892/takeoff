@@ -40,7 +40,7 @@ Elapsed time was **15 minutes 36 seconds from listener admission to task complet
 
 **Record references for the recording team**
 
-- Task: `285b8a73-572a-4e0a-9509-f97cf994f6f6` — “Takeoff live integration — first 3 house materials”.
-- Issued quote, revision 1: `quote_d7479895425441aa89b8ddb47946ddcc`.
-- Final recommendation comment: `bc41b89b-f5b9-42fb-95d3-9631c1c1ede0`.
+- Task: `00000000-0000-4000-8000-000000000001` — “Takeoff live integration — first 3 house materials”.
+- Issued quote, revision 1: `quote_redacted_11`.
+- Final recommendation comment: `00000000-0000-4000-8000-000000000005`.
 - Sanitized from the task's saved procurement run; raw messages, credentials, internal prompts, and supplier-private data are intentionally excluded from this handoff.

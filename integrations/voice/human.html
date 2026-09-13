@@ -31,13 +31,64 @@
   </div>
   <audio id="audio" autoplay></audio>
   <div id="captions"></div>
-  <p class="note">Captions are live transcripts and may contain mistakes. The buyer side records the call evidence; a confirmed readback is a quote, never an order.</p>
+  <p class="note">Captions are live transcripts and may contain mistakes. Both voices are recorded and saved on the buyer side. Keep this page open until the recording is saved after hanging up; a confirmed readback is a quote, never an order.</p>
 </main>
 <script type="module">
 const start = document.getElementById('start'), stop = document.getElementById('stop'), status = document.getElementById('status');
 const audio = document.getElementById('audio'), captions = document.getElementById('captions');
 const base = location.pathname.replace(/\/$/, '');
-let peer, events, microphone, finalized = false;
+let activeCall = null;
+
+function startRecording(call, remoteTrack) {
+  // Mix the seller's microphone and the buyer's remote track into one recording; uploaded to the buyer side.
+  if (call.closed || call.recorder || call.mixer) return;
+  try {
+    call.mixer = new AudioContext();
+    const sink = call.mixer.createMediaStreamDestination();
+    call.mixer.createMediaStreamSource(call.microphone).connect(sink);
+    call.mixer.createMediaStreamSource(new MediaStream([remoteTrack])).connect(sink);
+    call.recorder = new MediaRecorder(sink.stream, { mimeType: 'audio/webm;codecs=opus' });
+    call.recorder.addEventListener('dataavailable', e => { if (e.data.size) call.chunks.push(e.data); });
+    call.recorder.start(1000);
+  } catch {
+    call.recordingFailed = true;
+    call.mixer?.close().catch(() => {});
+    if (activeCall === call) status.textContent += ' Recording is unavailable in this browser.';
+  }
+}
+
+function stopRecording(call) {
+  if (!call.recorder || call.recorder.state === 'inactive') return Promise.resolve();
+  return new Promise(resolve => {
+    let timer;
+    const done = () => { clearTimeout(timer); call.recorder.removeEventListener('stop', done); resolve(); };
+    call.recorder.addEventListener('stop', done, { once: true });
+    timer = setTimeout(() => { call.recordingFailed = true; done(); }, 2000);
+    try { call.recorder.stop(); } catch { call.recordingFailed = true; done(); }
+  });
+}
+
+async function uploadRecording(call, recordingStopped) {
+  await recordingStopped; // Even a sub-second call needs MediaRecorder's final dataavailable event.
+  call.mixer?.close().catch(() => {});
+  if (!call.attemptId || !call.chunks.length || call.recordingFailed) {
+    if (activeCall === call) status.textContent += ' No complete audio recording was available.';
+    return;
+  }
+  const blob = new Blob(call.chunks, { type: 'audio/webm' });
+  call.chunks.length = 0;
+  const target = base + '/api/recording?attempt=' + encodeURIComponent(call.attemptId);
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), 10000);
+  try {
+    const response = await fetch(target, { method: 'POST', headers: { 'Content-Type': 'audio/webm' }, body: blob, signal: abort.signal });
+    if (activeCall === call) status.textContent += response.ok ? ' Recording saved (' + Math.round(blob.size / 1024) + ' KB).' : ' Recording upload failed.';
+  } catch {
+    if (activeCall === call) status.textContent += ' Recording upload could not be confirmed.';
+  } finally { clearTimeout(timer); }
+}
+// Never send a partial beacon that can replace the finalized recording.
+window.addEventListener('pagehide', () => cleanup(activeCall));
 const rows = { seller: null, buyer: null };
 let last = null;
 
@@ -55,40 +106,82 @@ function caption(speaker, text) {
   window.scrollTo(0, document.body.scrollHeight);
 }
 
-function cleanup() {
-  microphone?.getTracks().forEach(t => t.stop());
-  events?.close(); peer?.close(); audio.srcObject = null;
-  start.disabled = false; stop.disabled = true;
+function cleanup(call) {
+  if (!call || call.closed) return;
+  call.closed = true;
+  clearTimeout(call.hangupTimer);
+  call.requestAbort.abort();
+  const recordingStopped = stopRecording(call);
+  // Release capture and transport immediately; saving audio must never keep the microphone on.
+  call.microphone?.getTracks().forEach(t => t.stop());
+  call.events?.close(); call.peer?.close();
+  if (activeCall === call) {
+    audio.srcObject = null;
+    start.disabled = false; stop.disabled = true;
+  }
+  call.upload = uploadRecording(call, recordingStopped);
 }
 
 start.addEventListener('click', async () => {
-  start.disabled = true; finalized = false; status.textContent = 'Connecting…';
+  if (activeCall && !activeCall.closed) return;
+  const call = { chunks: [], closed: false, requestAbort: new AbortController() };
+  activeCall = call;
+  rows.seller = rows.buyer = null; last = null; captions.replaceChildren();
+  start.disabled = true; stop.disabled = false; status.textContent = 'Connecting…';
   try {
-    peer = new RTCPeerConnection();
-    peer.addEventListener('track', e => { audio.srcObject = new MediaStream([e.track]); audio.play().catch(() => status.textContent = 'Press play on the audio control.'); });
-    microphone = await navigator.mediaDevices.getUserMedia({ audio: true });
-    for (const track of microphone.getAudioTracks()) peer.addTrack(track, microphone);
-    events = peer.createDataChannel('oai-events');
-    events.addEventListener('message', ({ data }) => {
+    call.peer = new RTCPeerConnection();
+    call.peer.addEventListener('track', e => {
+      if (activeCall !== call || call.closed) return;
+      audio.srcObject = new MediaStream([e.track]);
+      audio.play().catch(() => { if (activeCall === call && !call.closed) status.textContent = 'Press play on the audio control.'; });
+      startRecording(call, e.track);
+    });
+    call.microphone = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (call.closed) { call.microphone.getTracks().forEach(t => t.stop()); return; }
+    for (const track of call.microphone.getAudioTracks()) call.peer.addTrack(track, call.microphone);
+    call.events = call.peer.createDataChannel('oai-events');
+    call.events.addEventListener('message', ({ data }) => {
+      if (activeCall !== call || call.closed) return;
       const event = JSON.parse(data);
       if (event.type === 'session.started') { stop.disabled = false; status.textContent = 'Connected. Session ' + event.session.id; }
       else if (event.type === 'session.input_transcript.delta') caption('seller', event.delta);
       else if (event.type === 'session.output_transcript.delta') caption('buyer', event.delta);
-      else if (event.type === 'session.closed') { finalized = true; status.textContent = 'Call ended.'; cleanup(); }
+      else if (event.type === 'session.closed') { status.textContent = 'Call ended.'; cleanup(call); }
     });
-    events.addEventListener('close', () => { if (!finalized) { status.textContent = 'Disconnected.'; cleanup(); } });
-    const offer = await peer.createOffer();
-    await peer.setLocalDescription(offer);
-    if (peer.iceGatheringState !== 'complete') {
-      await new Promise(resolve => { const check = () => { if (peer.iceGatheringState === 'complete') { peer.removeEventListener('icegatheringstatechange', check); resolve(); } }; peer.addEventListener('icegatheringstatechange', check); });
+    call.events.addEventListener('close', () => { if (!call.closed) { if (activeCall === call) status.textContent = 'Disconnected.'; cleanup(call); } });
+    const offer = await call.peer.createOffer();
+    await call.peer.setLocalDescription(offer);
+    if (call.peer.iceGatheringState !== 'complete') {
+      await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => { call.peer.removeEventListener('icegatheringstatechange', check); reject(new Error('Connection setup timed out.')); }, 10000);
+        const check = () => { if (call.peer.iceGatheringState === 'complete') { clearTimeout(timer); call.peer.removeEventListener('icegatheringstatechange', check); resolve(); } };
+        call.peer.addEventListener('icegatheringstatechange', check);
+      });
     }
-    const response = await fetch(base + '/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sdp: peer.localDescription.sdp }) });
+    if (call.closed) return;
+    const requestTimer = setTimeout(() => call.requestAbort.abort(), 70000);
+    let response;
+    try {
+      response = await fetch(base + '/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sdp: call.peer.localDescription.sdp }), signal: call.requestAbort.signal });
+    } finally { clearTimeout(requestTimer); }
     if (!response.ok) throw new Error((await response.json()).error || response.statusText);
     const result = await response.json();
-    await peer.setRemoteDescription({ type: 'answer', sdp: result.sdp });
-  } catch (error) { status.textContent = 'Failed: ' + error.message; cleanup(); }
+    if (call.closed) return;
+    call.attemptId = result.attempt_id;
+    await call.peer.setRemoteDescription({ type: 'answer', sdp: result.sdp });
+  } catch (error) { if (activeCall === call && !call.closed) status.textContent = 'Failed: ' + error.message; cleanup(call); }
 });
-stop.addEventListener('click', () => { stop.disabled = true; try { events.send(JSON.stringify({ type: 'session.close', event_id: 'close_ui' })); } catch { cleanup(); } });
+stop.addEventListener('click', () => {
+  const call = activeCall;
+  if (!call || call.closed) return;
+  stop.disabled = true;
+  call.microphone?.getTracks().forEach(t => t.stop());
+  status.textContent = 'Call ended.';
+  try {
+    call.events.send(JSON.stringify({ type: 'session.close', event_id: 'close_ui' }));
+    call.hangupTimer = setTimeout(() => cleanup(call), 1500);
+  } catch { cleanup(call); }
+});
 </script>
 </body>
 </html>

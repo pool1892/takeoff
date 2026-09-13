@@ -1,9 +1,9 @@
 # Ambiguous buyer connection
 
-The verified buyer workspace is **takeoffAI**, supplied by Christoph. **Chip** is
-Christoph's managed personal agent there (username `takeoff-hermes`). Its scoped
-runtime key is separate from Christoph's bootstrap admin key. The supplier agent must keep its own
-workspace and credentials on the supplier computer.
+The hackathon used **takeoffAI** and **Chip** (username `takeoff-hermes`). For a
+new setup, configure your own workspace, buyer agent, and contractor identity.
+The scoped runtime key is separate from the bootstrap admin key. The supplier
+agent must keep its own workspace and credentials on the supplier computer.
 
 The official `ambiguous` CLI is pinned to **0.9.0** under
 `integrations/ambiguous/`. Its command catalog comes from the live OpenAPI schema;
@@ -33,6 +33,7 @@ or Git. The integration reads these variables from that file:
 | `TAKEOFF_AMBIGUOUS_WORKSPACE_REF` | `takeoffAI`, the human-supplied name/reference |
 | `TAKEOFF_AMBIGUOUS_WORKSPACE_ID` | Verified `workspace_id` from the API |
 | `TAKEOFF_AMBIGUOUS_USER_ID` | Verified buyer agent `user_id` from the API |
+| `TAKEOFF_AMBIGUOUS_CONTRACTOR_ID` | Human contractor's verified user ID; required for chat/intake and authorization |
 
 With the token present, connect the buyer identity:
 

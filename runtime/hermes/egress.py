@@ -11,9 +11,9 @@ import threading
 import time
 
 
-ALLOWED_HOSTS = frozenset({'api.openai.com', 'api.ambiguous.ai', 'app.ambiguous.ai',
-                           'multiply-cameo-clash.ngrok-free.dev',
-                           'supplier-codex-production.up.railway.app'})
+# Add only the reviewed hostname of your own supplier deployment before running.
+# Historical hackathon hosts have been retired from the default allowlist.
+ALLOWED_HOSTS = frozenset({'api.openai.com', 'api.ambiguous.ai', 'app.ambiguous.ai'})
 PORT = 3128
 HEADER_LIMIT = 32768
 HEADER_TIMEOUT = 10

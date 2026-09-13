@@ -8,21 +8,22 @@
     "supplier_reply_sent_at": "2026-09-12T21:32:46.664Z",
     "buyer_verification": {
       "source": "Christoph implementation agent; issue #9 update at 21:37 UTC",
-      "task_id": "285b8a73-572a-4e0a-9509-f97cf994f6f6",
-      "recommendation_comment_id": "bc41b89b-f5b9-42fb-95d3-9631c1c1ede0",
+      "task_id": "00000000-0000-4000-8000-000000000001",
+      "recommendation_comment_id": "00000000-0000-4000-8000-000000000005",
       "task_status": "done",
       "validated_requirement_count": 3
     },
-    "negotiation": "Buyer proposed USD 2300; supplier matched it. No post-quote counter or acceptance occurred."
+    "negotiation": "Buyer proposed USD 2300; supplier matched it. No post-quote counter or acceptance occurred.",
+    "privacy": "Account, task, run, message, and quote identifiers are redacted placeholders; recorded commercial values are unchanged."
   },
   "offer": {
-    "id": "quote_d7479895425441aa89b8ddb47946ddcc",
-    "quote_id": "quote_d7479895425441aa89b8ddb47946ddcc",
-    "run_id": "run_402632f04bb94032b83ffa8ecd69f96f",
+    "id": "quote_redacted_11",
+    "quote_id": "quote_redacted_11",
+    "run_id": "run_redacted_14",
     "vendor_id": "overstock",
     "supplier_id": "overstock",
     "buyer_id": "demo-buyer",
-    "request_id": "email:3bdb9db4-4356-4476-a320-789c371966db",
+    "request_id": "email:00000000-0000-4000-8000-000000000002",
     "revision": 1,
     "previous_quote_id": null,
     "status": "issued",

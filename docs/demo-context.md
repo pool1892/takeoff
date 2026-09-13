@@ -1,5 +1,11 @@
 # Demo context and verification
 
+The final source distribution replaces live account, message, task, session, and
+quote identifiers with privacy placeholders. Recorded commercial values and
+verification limitations are unchanged. Raw conversations, audio, credentials,
+and runtime state are excluded. The integration status below records the
+September 12 hackathon; local services were shut down on September 13.
+
 Takeoff's product surfaces should read like a professional procurement application.
 This document is the shared home for scenario caveats, provenance, limitations, and
 verification status. Use a discreet link here instead of repeating disclaimers in
@@ -54,7 +60,7 @@ was empty at the recipient: the buyer sent `body_text` instead of `body_markdown
 and the supplier inbox listing also required full-message hydration. Both adapters
 are corrected. Those attempts produced catalog responses rather than issued quotes
 and remain in the evidence. The corrected live Chip request produced supplier quote
-`quote_d7479895425441aa89b8ddb47946ddcc`: USD 2,300 delivered for the first three
+`quote_redacted_11`: USD 2,300 delivered for the first three
 material lines, issued at 21:32 UTC and sent back through Ambiguous. Christoph verified buyer receipt, validation, a published recommendation, and
 task completion at 21:35 UTC. The buyer proposed USD 2,300 and the supplier matched
 it; no post-quote counteroffer occurred.

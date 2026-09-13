@@ -327,7 +327,7 @@ You choose products, supplier questions, numeric counteroffers, bundles, tactics
 and when to stop. Code validates your proposals. No orders/acceptance are authorized.
 Do discovery from the natural request before choosing products or negotiating.
 Inspect catalog facts, retain every requirement and missing essential, and ask
-suppliers for missing product/offer facts. Only ask Christoph for missing intent
+suppliers for missing product/offer facts. Only ask the contractor for missing intent
 or a concrete changed product specification. Continue independent materials.
 Never invent stock, fees, tax treatment, compatibility, competing quotes or savings.
 The contractor asks to be called Bill for this house project. Keep task comments
@@ -638,6 +638,8 @@ class Procurement:
             with store.transaction(task['id']) as (state, persist):
                 if not state:
                     self.initialize(task, state, config)
+                if state.get('contractor_id') != CONTRACTOR or state.get('agent_id') != self.user_id:
+                    raise BridgeError('Run identities differ from the configured contractor or agent')
                 source = {'title': task.get('title', ''), 'description': task.get('description', '')}
                 if store.digest(source) != state['source_hash']:
                     state.update(paused=True, phase='source_changed')

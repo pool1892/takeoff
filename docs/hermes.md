@@ -82,7 +82,7 @@ for host reachability and an SSH local tunnel. Replace `TAILSCALE_HOST` with the
 home machine's actual Tailscale hostname or address, then run on the Mac:
 
 ```bash
-ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:3000:127.0.0.1:3000 cs@TAILSCALE_HOST
+ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:3000:127.0.0.1:3000 USER@TAILSCALE_HOST
 ```
 
 Open the printed `http://127.0.0.1:3000/s/.../` URL in the Mac's browser and allow
@@ -110,17 +110,16 @@ launches publish no ports; `voice-web` publishes only the loopback port above.
 The buyer uses an internal Docker network with `gateway_mode_ipv4=isolated`, so
 even a host service listening on every address is not available via a bridge
 gateway. It has no default route. A separate unprivileged proxy allows HTTPS only
-to `api.openai.com`, `api.ambiguous.ai`, `app.ambiguous.ai`, and the agreed supplier
-hosts `multiply-cameo-clash.ngrok-free.dev` and
-`supplier-codex-production.up.railway.app`, rejecting private,
+to `api.openai.com`, `api.ambiguous.ai`, and `app.ambiguous.ai`, rejecting private,
 loopback, and link-local DNS results. TLS stays end to end; the proxy has no
 credentials or repo/state mount. Each launch creates and removes its own proxy
 and private network. This requires Docker Engine 28 or later and fails closed on
 unsupported engines. Do not put supplier-private state or unrelated personal
 secrets inside the mounted repo.
 
-Additional supplier website domains must be reviewed and added to
-`runtime/hermes/egress.py` when Tapan provides them. There is deliberately no
+Before running a new supplier integration, review its exact hostname and add it to
+`ALLOWED_HOSTS` in `runtime/hermes/egress.py`. Historical supplier hosts are no longer
+allowed by default. There is deliberately no
 unrestricted network fallback. Tools must honor the provided HTTP(S) proxy;
 Node's native environment proxy support is enabled. The current API/CLI calls
 work over HTTPS through that boundary.

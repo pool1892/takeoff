@@ -26,8 +26,10 @@ import urllib.parse
 import urllib.request
 from uuid import UUID
 
-CONTRACTOR = '9df6ad27-165e-4534-8e26-800b5a33ab6a'
-WORKSPACE = '9ab01362-770d-4f8c-98a5-c431e5e44dac'
+# Setup binds the runtime to its intended human owner and workspace. There is no
+# fallback account: API construction rejects missing or malformed configuration.
+CONTRACTOR = os.environ.get('TAKEOFF_AMBIGUOUS_CONTRACTOR_ID', '').strip().lower()
+WORKSPACE = os.environ.get('TAKEOFF_AMBIGUOUS_WORKSPACE_ID', '').strip().lower()
 FAILURE_REPLY = 'I couldn’t complete that response. Please send your request again so I can retry.'
 
 
@@ -49,6 +51,13 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 class API:
     def __init__(self):
+        for name, value in (('TAKEOFF_AMBIGUOUS_CONTRACTOR_ID', CONTRACTOR),
+                            ('TAKEOFF_AMBIGUOUS_WORKSPACE_ID', WORKSPACE)):
+            try:
+                if identifier(value) != value:
+                    raise BridgeError('Invalid resource identity')
+            except BridgeError:
+                raise BridgeError(f'Configure {name} with the verified UUID') from None
         self.origin = os.environ.get('AMBI_API_URL', 'https://api.ambiguous.ai').rstrip('/')
         if self.origin not in ('https://api.ambiguous.ai', 'https://app.ambiguous.ai'):
             raise BridgeError('Unexpected API origin')
